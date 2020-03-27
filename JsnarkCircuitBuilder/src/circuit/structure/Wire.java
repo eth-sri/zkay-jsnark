@@ -444,6 +444,11 @@ public class Wire {
 	}
 
 	public Wire shiftLeft(int numBits, int s, String... desc) {
+		if (s >= numBits) {
+			// Will always be zero in that case
+			return generator.zeroWire;
+		}
+
 		WireArray bits = getBitWires(numBits, desc);
 		Wire[] shiftedBits = new Wire[numBits];
 		for (int i = 0; i < numBits; i++) {
@@ -462,11 +467,35 @@ public class Wire {
 	}
 
 	public Wire shiftRight(int numBits, int s, String... desc) {
+		if (s >= numBits) {
+			// Will always be zero in that case
+			return generator.zeroWire;
+		}
+
 		WireArray bits = getBitWires(numBits, desc);
 		Wire[] shiftedBits = new Wire[numBits];
 		for (int i = 0; i < numBits; i++) {
 			if (i >= numBits - s)
 				shiftedBits[i] = generator.zeroWire;
+			else
+				shiftedBits[i] = bits.get(i + s);
+		}
+		WireArray result = new WireArray(shiftedBits);
+		BigInteger v = result.checkIfConstantBits(desc);
+		if (v == null) {
+			return new LinearCombinationWire(result);
+		} else {
+			return generator.createConstantWire(v);
+		}
+	}
+
+	public Wire shiftArithRight(int numBits, int s, String... desc) {
+		WireArray bits = getBitWires(numBits, desc);
+		Wire[] shiftedBits = new Wire[numBits];
+		Wire sign = bits.get(numBits-1);
+		for (int i = 0; i < numBits; i++) {
+			if (i >= numBits - s)
+				shiftedBits[i] = sign;
 			else
 				shiftedBits[i] = bits.get(i + s);
 		}
