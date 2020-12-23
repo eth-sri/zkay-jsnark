@@ -90,10 +90,10 @@ abstract class LongIntegerDivision extends Gadget {
 
 	private void buildCircuit() {
 
-		int aBitwidth = a.getMaxVal(LongElement.CHUNK_BITWIDTH).bitLength();
-		int bBitwidth = b.getMaxVal(LongElement.CHUNK_BITWIDTH).bitLength();
+		int aBitwidth = Math.max(1, a.getMaxVal(LongElement.CHUNK_BITWIDTH).bitLength());
+		int bBitwidth = Math.max(1, b.getMaxVal(LongElement.CHUNK_BITWIDTH).bitLength());
 
-		int rBitwidth = bBitwidth;
+		int rBitwidth = Math.min(aBitwidth, bBitwidth);
 		int qBitwidth = aBitwidth;
 
 		if (bMinBitwidth > 0) {
