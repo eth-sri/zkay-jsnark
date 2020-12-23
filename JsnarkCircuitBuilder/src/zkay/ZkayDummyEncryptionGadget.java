@@ -7,7 +7,6 @@ package zkay;
 import circuit.auxiliary.LongElement;
 import circuit.operations.Gadget;
 import circuit.structure.Wire;
-import circuit.structure.WireArray;
 
 import java.util.Arrays;
 
@@ -23,8 +22,8 @@ public class ZkayDummyEncryptionGadget extends Gadget {
         }
         this._plain = plain;
         Wire[] pkarr = pk.getBits().packBitsIntoWords(256);
-        if (pkarr.length != 1) {
-            throw new IllegalArgumentException("Pk too large");
+        for (int i = 1; i < pkarr.length; ++i) {
+            generator.addZeroAssertion(pkarr[i], "Dummy enc pk valid");
         }
         this._pk = pkarr[0];
         this._cipher = new Wire[(int)Math.ceil((1.0*key_bits)/ZkayUtil.ZKAY_DUMMY_CHUNK_SIZE)];
