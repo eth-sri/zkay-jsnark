@@ -12,9 +12,10 @@ import examples.gadgets.math.LongIntegerModGadget;
 /**
  * A gadget to check if an RSA signature is valid according to PKCS 1 v1.5 (A
  * gadget based on the latest standard (PSS) will be added in the future).
- * 
  * This gadget assumes SHA256 for the message hash, and a public exponent of
  * 0x10001.
+ * This gadget can accept a hardcoded or a variable RSA modulus. See the
+ * corresponding generator example. 
  * 
  * Implemented according to the standard specs here:
  * https://www.emc.com/collateral/white-
@@ -39,24 +40,25 @@ public class RSASigVerificationV1_5_Gadget extends Gadget {
 	public static final int SHA256_DIGEST_LENGTH = 32; // in bytes
 
 	public RSASigVerificationV1_5_Gadget(LongElement modulus, Wire[] msgHash,
-			LongElement signature, int rsaKeyLength, String... desc) {
+			LongElement signature, int rsaKeyBitLength, String... desc) {
 		super(desc);
 		this.modulus = modulus;
 		this.msgHash = msgHash;
 		this.signature = signature;
-		this.rsaKeyBitLength = rsaKeyLength;
+		this.rsaKeyBitLength = rsaKeyBitLength;
 		buildCircuit();
 	}
 
 	private void buildCircuit() {
 
 		LongElement s = signature;
+
 		for (int i = 0; i < 16; i++) {
 			s = s.mul(s);
-			s = new LongIntegerModGadget(s, modulus, false).getRemainder();
+			s = new LongIntegerModGadget(s, modulus, rsaKeyBitLength, false).getRemainder();
 		}
 		s = s.mul(signature);
-		s = new LongIntegerModGadget(s, modulus, true).getRemainder();
+		s = new LongIntegerModGadget(s, modulus, rsaKeyBitLength, true).getRemainder();
 		Wire[] sChunks = s.getArray();
 
 		// note that the following can be improved, but for simplicity we

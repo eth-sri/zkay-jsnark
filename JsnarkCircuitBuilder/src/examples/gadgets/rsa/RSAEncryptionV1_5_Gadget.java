@@ -17,6 +17,8 @@ import examples.gadgets.math.LongIntegerModGadget;
  * A gadget for RSA encryption according to PKCS#1 v1.5. A future version will
  * have the RSA-OAEP method according to PKCS#1 v2.x. The gadget assumes a
  * hardcoded public exponent of 0x10001.
+ * This gadget can accept a hardcoded or a variable RSA modulus. See the
+ * corresponding generator example. 
  * 
  * Implemented according to the standard specs here:
  * https://www.emc.com/collateral/white-
@@ -107,10 +109,10 @@ public class RSAEncryptionV1_5_Gadget extends Gadget {
 		LongElement s = paddedMsg;
 		for (int i = 0; i < 16; i++) {
 			s = s.mul(s);
-			s = new LongIntegerModGadget(s, modulus, false).getRemainder();
+			s = new LongIntegerModGadget(s, modulus, rsaKeyBitLength, false).getRemainder();
 		}
 		s = s.mul(paddedMsg);
-		s = new LongIntegerModGadget(s, modulus, true).getRemainder();
+		s = new LongIntegerModGadget(s, modulus, rsaKeyBitLength, true).getRemainder();
 
 		// return the cipher text as byte array
 		ciphertext = s.getBits(rsaKeyBitLength).packBitsIntoWords(8);
