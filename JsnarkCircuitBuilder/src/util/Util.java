@@ -192,7 +192,7 @@ public class Util {
 	}
 	
 	public static BigInteger[] split(BigInteger x, int chunksize) {
-		int numChunks = (int)Math.ceil(x.bitLength()*1.0/chunksize);
+		int numChunks = Math.max(1, (int)Math.ceil(x.bitLength()*1.0/chunksize));
 		BigInteger[] chunks = new BigInteger[numChunks];
 		BigInteger mask = new BigInteger("2").pow(chunksize).subtract(BigInteger.ONE);
 		for (int i = 0; i < numChunks; i++) {
