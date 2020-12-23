@@ -97,7 +97,7 @@ abstract class LongIntegerDivision extends Gadget {
 		int qBitwidth = aBitwidth;
 
 		if (bMinBitwidth > 0) {
-			qBitwidth = qBitwidth - bMinBitwidth + 1;
+			qBitwidth = Math.max(1, qBitwidth - bMinBitwidth + 1);
 		}
 
 		// length in what follows means the number of chunks
