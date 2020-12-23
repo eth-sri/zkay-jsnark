@@ -7,6 +7,7 @@ import java.math.BigInteger;
 
 import circuit.config.Config;
 import circuit.structure.Wire;
+import util.Util;
 
 public class ConstMulBasicOp extends BasicOp {
 
@@ -18,11 +19,11 @@ public class ConstMulBasicOp extends BasicOp {
 		super(new Wire[] { w }, new Wire[] { out }, desc);
 		inSign = constInteger.signum() == -1;
 		if (!inSign) {
-			constInteger = constInteger.mod(Config.FIELD_PRIME);
-			this.constInteger =constInteger;
+			constInteger = Util.mod(constInteger, Config.FIELD_PRIME);
+			this.constInteger = constInteger;
 		} else {
 			constInteger = constInteger.negate();
-			constInteger = constInteger.mod(Config.FIELD_PRIME);
+			constInteger = Util.mod(constInteger, Config.FIELD_PRIME);
 			this.constInteger = Config.FIELD_PRIME.subtract(constInteger);
 		}
 	}

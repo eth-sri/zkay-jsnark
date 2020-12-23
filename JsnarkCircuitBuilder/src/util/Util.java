@@ -216,4 +216,12 @@ public class Util {
 			return newArray;
 		}
 	}
+
+	public static BigInteger mod(BigInteger x, BigInteger m) {
+		if (x.signum() >= 0 && x.compareTo(m) < 0) {
+			return x; // In range, 'mod' is no-op, but creates new BigInteger
+		} else {
+			return x.mod(m);
+		}
+	}
 }

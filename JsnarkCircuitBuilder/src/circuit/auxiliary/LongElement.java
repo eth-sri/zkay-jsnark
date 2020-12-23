@@ -269,7 +269,7 @@ public class LongElement {
 						vector2[i] = o.array[i].mul(coeff);
 					}
 					vector3[i] = result[i].mul(coeff);
-					coeff = coeff.multiply(constant).mod(Config.FIELD_PRIME);
+					coeff = Util.mod(coeff.multiply(constant), Config.FIELD_PRIME);
 				}
 
 				// for(int i = array.length-1; i>=0; i--){
