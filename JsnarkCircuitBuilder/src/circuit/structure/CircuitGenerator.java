@@ -320,16 +320,19 @@ public abstract class CircuitGenerator {
 	}
 
 	public Wire[] addToEvaluationQueue(Instruction e) {
-		if (evaluationQueue.containsKey(e)) {
+		Instruction existingInstruction = evaluationQueue.putIfAbsent(e, e);
+		if (existingInstruction == null) {
 			if (e instanceof BasicOp) {
-				return ((BasicOp) evaluationQueue.get(e)).getOutputs();
+				numOfConstraints += ((BasicOp) e).getNumMulGates();
 			}
+			return null;  // returning null means we have not seen this instruction before
 		}
-		if (e instanceof BasicOp) {
-			numOfConstraints += ((BasicOp) e).getNumMulGates();
+
+		if (existingInstruction instanceof BasicOp) {
+			return ((BasicOp) existingInstruction).getOutputs();
+		} else {
+			return null;  // have seen this instruction before, but can't de-duplicate
 		}
-		evaluationQueue.put(e, e);
-		return null;  // returning null means we have not seen this instruction before
 	}
 
 	public void printState(String message) {
