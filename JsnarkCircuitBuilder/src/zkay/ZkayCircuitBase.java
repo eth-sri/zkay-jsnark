@@ -750,8 +750,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         }
 
         int idx = 0;
-        List<String>[] io_name_lists = new List[]{pub_in_names, pub_out_names, priv_in_names};
-        for (List<String> io_name_list : io_name_lists) {
+        for (List<String> io_name_list : Arrays.asList(pub_in_names, pub_out_names, priv_in_names)) {
             for (String name : io_name_list) {
                 TypedWire[] wires = vars.get(name);
                 StringBuilder sb = new StringBuilder("Setting '" + name + "' to [");
