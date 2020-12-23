@@ -38,7 +38,7 @@ public class LongElement {
 	// Don't change in the middle of circuit generation.
 	// This represents the size of smaller chunks used to represent long
 	// elements
-	public static int CHUNK_BITWIDTH = 32;
+	public static int CHUNK_BITWIDTH = 120;
 
 	public LongElement(Wire w, int currentBitwidth) {
 		array = new Wire[] { w };
