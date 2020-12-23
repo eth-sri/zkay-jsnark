@@ -10,3 +10,6 @@ bin
 *.arith
 !JsnarkCirctuitBuilder/auction_10.arith
 *.in
+*.iml
+.idea
+target
