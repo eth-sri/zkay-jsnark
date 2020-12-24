@@ -150,7 +150,7 @@ abstract class LongIntegerDivision extends Gadget {
 	}
 
 	public LongElement getQuotient() {
-		return r;
+		return q;
 	}
 
 	public LongElement getRemainder() {
