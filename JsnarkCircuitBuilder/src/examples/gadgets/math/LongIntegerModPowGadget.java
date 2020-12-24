@@ -47,6 +47,10 @@ public class LongIntegerModPowGadget extends Gadget {
 		c = new LongIntegerModGadget(product, m, true, "modPow: final prod mod m").getRemainder();
 	}
 
+	public LongElement getResult() {
+		return c;
+	}
+
 	@Override
 	public Wire[] getOutputWires() {
 		return c.getArray();
