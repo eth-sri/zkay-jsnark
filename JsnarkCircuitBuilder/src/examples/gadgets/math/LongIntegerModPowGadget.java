@@ -14,23 +14,29 @@ public class LongIntegerModPowGadget extends Gadget {
 
 	private final LongElement b; // base
 	private final LongElement e; // exponent
+	private final int eMaxBits; // maximum bit length of e
 	private final LongElement m; // modulus
-	private final int mMinBitLength; // Minimum number of bits that will ever fit the modulus
+	private final int mMinBits; // minimum bit length of m
 
 	private LongElement c; // c = m^e mod m
 
 	public LongIntegerModPowGadget(LongElement b, LongElement e, LongElement m, int mMinBitLength, String... desc) {
+		this(b, e, -1, m, mMinBitLength, desc);
+	}
+
+	public LongIntegerModPowGadget(LongElement b, LongElement e, int eMaxBits, LongElement m, int mMinBits, String... desc) {
 		super(desc);
 		this.b = b;
 		this.e = e;
+		this.eMaxBits = eMaxBits;
 		this.m = m;
-		this.mMinBitLength = mMinBitLength;
+		this.mMinBits = mMinBits;
 		buildCircuit();
 	}
 
 	private void buildCircuit() {
 		final LongElement one = new LongElement(new BigInteger[] {BigInteger.ONE});
-		Wire[] eBits = e.getBits(-1).asArray();
+		Wire[] eBits = e.getBits(eMaxBits).asArray();
 
 		// Start with product = 1
 		LongElement product = one;
@@ -39,9 +45,9 @@ public class LongIntegerModPowGadget extends Gadget {
 		// if (eBit == 1) product = (product * base) mod m
 		for (int i = eBits.length - 1; i >= 0; --i) {
 			LongElement square = product.mul(product);
-			LongElement squareModM = new LongIntegerModGadget(square, m, mMinBitLength, false, "modPow: prod^2 mod m").getRemainder();
+			LongElement squareModM = new LongIntegerModGadget(square, m, mMinBits, false, "modPow: prod^2 mod m").getRemainder();
 			LongElement squareTimesBase = squareModM.mul(one.muxBit(b, eBits[i]));
-			product = new LongIntegerModGadget(squareTimesBase, m, mMinBitLength, false, "modPow: prod * base mod m").getRemainder();
+			product = new LongIntegerModGadget(squareTimesBase, m, mMinBits, false, "modPow: prod * base mod m").getRemainder();
 		}
 
 		c = new LongIntegerModGadget(product, m, true, "modPow: final prod mod m").getRemainder();
