@@ -11,6 +11,7 @@ public class ZkayPaillierEncGadget extends Gadget {
 	private final LongElement n;
 	private final LongElement nSquare;
 	private final int nBits;
+	private final int nSquareMaxBits;
 	private final LongElement generator;
 	private final LongElement plain;
 	private final LongElement random;
@@ -18,8 +19,10 @@ public class ZkayPaillierEncGadget extends Gadget {
 
 	public ZkayPaillierEncGadget(LongElement n, int nBits, LongElement generator, LongElement plain, LongElement random) {
 		this.n = n;
-		this.nSquare = n.mul(n);
 		this.nBits = nBits;
+		this.nSquareMaxBits = 2 * nBits; // Maximum bit length of n^2
+		int maxNumChunks = (nSquareMaxBits + (LongElement.CHUNK_BITWIDTH - 1)) / LongElement.CHUNK_BITWIDTH;
+		this.nSquare = n.mul(n).align(maxNumChunks);
 		this.generator = generator;
 		this.plain = plain;
 		this.random = random;
@@ -27,11 +30,11 @@ public class ZkayPaillierEncGadget extends Gadget {
 	}
 
 	private void buildCircuit() {
-		int nSquareBits = 2 * nBits - 1; // Minimum bit length of n^2
-		LongElement gPowPlain = new LongIntegerModPowGadget(generator, plain, nSquare, nSquareBits, "g^m").getResult();
-		LongElement randPowN = new LongIntegerModPowGadget(random, n, nSquare, nSquareBits, "r^n").getResult();
+		int nSquareMinBits = 2 * nBits - 1; // Minimum bit length of n^2
+		LongElement gPowPlain = new LongIntegerModPowGadget(generator, plain, nBits, nSquare, nSquareMinBits, "g^m").getResult();
+		LongElement randPowN = new LongIntegerModPowGadget(random, n, nBits, nSquare, nSquareMinBits, "r^n").getResult();
 		LongElement product = gPowPlain.mul(randPowN);
-		cipher = new LongIntegerModGadget(product, nSquare, nSquareBits, true, "g^m * r^n mod n^2").getRemainder();
+		cipher = new LongIntegerModGadget(product, nSquare, nSquareMinBits, true, "g^m * r^n mod n^2").getRemainder();
 	}
 
 	public LongElement getCiphertext() {
@@ -40,6 +43,6 @@ public class ZkayPaillierEncGadget extends Gadget {
 
 	@Override
 	public Wire[] getOutputWires() {
-		return cipher.getArray();
+		return cipher.getBits(nSquareMaxBits).packBitsIntoWords(32);
 	}
 }

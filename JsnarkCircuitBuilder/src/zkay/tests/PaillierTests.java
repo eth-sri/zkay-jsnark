@@ -38,6 +38,28 @@ public class PaillierTests {
 		assertEquals(new BigInteger("55"), plain);
 	}
 
+	@Test
+	public void test256BitEncryption() {
+		BigInteger plain = new BigInteger("58620521968995858419238449046464883186412581610038046858008683322252437292505");
+		BigInteger random = new BigInteger("66895129274476067543864711343178574027057505369800972938068894913816799963509");
+		BigInteger n = new BigInteger("71705678335151044143714697909938764102247769560297862447809589632641441407751");
+		BigInteger generator = new BigInteger("27");
+		PaillierEncCircuitGenerator enc = new PaillierEncCircuitGenerator("Paillier Enc", plain, random, n, generator);
+		BigInteger cipher = enc.computeResult();
+		assertEquals(new BigInteger("3507594166975424775795724429703273237581693482251350761249288990776233360058698524194928568270852256828927631672223419615120374443722184016172266681685963"), cipher);
+	}
+
+	@Test
+	public void test256BitDecryption() {
+		BigInteger n = new BigInteger("71705678335151044143714697909938764102247769560297862447809589632641441407751");
+		BigInteger cipher = new BigInteger("3507594166975424775795724429703273237581693482251350761249288990776233360058698524194928568270852256828927631672223419615120374443722184016172266681685963");
+		BigInteger lambda = new BigInteger("35852839167575522071857348954969382050854184697828828629810896599748215236036");
+		BigInteger mu = new BigInteger("38822179779668243734206910236945399376867932682990009748733172869327079310544");
+		PaillierDecCircuitGenerator dec = new PaillierDecCircuitGenerator("Paillier Dec", cipher, n, lambda, mu);
+		BigInteger plain = dec.computeResult();
+		assertEquals(new BigInteger("58620521968995858419238449046464883186412581610038046858008683322252437292505"), plain);
+	}
+
 	private static class PaillierEncCircuitGenerator extends CircuitGenerator {
 
 		private final BigInteger plain;
@@ -88,7 +110,7 @@ public class PaillierTests {
 
 			CircuitEvaluator evaluator = getCircuitEvaluator();
 			BigInteger[] outValues = evaluator.getWiresValues(getOutWires().toArray(new Wire[0]));
-			return Util.group(outValues, LongElement.CHUNK_BITWIDTH);
+			return Util.group(outValues, 32);
 		}
 	}
 
@@ -142,7 +164,7 @@ public class PaillierTests {
 
 			CircuitEvaluator evaluator = getCircuitEvaluator();
 			BigInteger[] outValues = evaluator.getWiresValues(getOutWires().toArray(new Wire[0]));
-			return Util.group(outValues, LongElement.CHUNK_BITWIDTH);
+			return Util.group(outValues, 32);
 		}
 	}
 }

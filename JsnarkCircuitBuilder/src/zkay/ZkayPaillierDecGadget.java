@@ -24,8 +24,10 @@ public class ZkayPaillierDecGadget extends Gadget {
 
 	public ZkayPaillierDecGadget(LongElement n, int nBits, LongElement lambda, LongElement mu, LongElement cipher) {
 		this.n = n;
-		this.nSquare = n.mul(n);
 		this.nBits = nBits;
+		int nSquareMaxBits = 2 * nBits;
+		int maxNumChunks = (nSquareMaxBits + (LongElement.CHUNK_BITWIDTH - 1)) / LongElement.CHUNK_BITWIDTH;
+		this.nSquare = n.mul(n).align(maxNumChunks);
 		this.lambda = lambda;
 		this.mu = mu;
 		this.cipher = cipher;
@@ -33,8 +35,8 @@ public class ZkayPaillierDecGadget extends Gadget {
 	}
 
 	private void buildCircuit() {
-		int nSquareBits = 2 * nBits - 1; // Minimum bit length of n^2
-		LongElement cPowLambda = new LongIntegerModPowGadget(cipher, lambda, nSquare, nSquareBits, "c^lambda").getResult();
+		int nSquareMinBits = 2 * nBits - 1; // Minimum bit length of n^2
+		LongElement cPowLambda = new LongIntegerModPowGadget(cipher, lambda, nSquare, nSquareMinBits, "c^lambda").getResult();
 
 		Wire[] minusOneWires = generator.createProverWitnessWireArray(cPowLambda.getSize());
 		LongElement minusOne = new LongElement(minusOneWires, cPowLambda.getCurrentBitwidth());
@@ -59,6 +61,6 @@ public class ZkayPaillierDecGadget extends Gadget {
 
 	@Override
 	public Wire[] getOutputWires() {
-		return plain.getArray();
+		return plain.getBits(nBits).packBitsIntoWords(32);
 	}
 }
