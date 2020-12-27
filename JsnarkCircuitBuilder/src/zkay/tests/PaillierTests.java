@@ -110,7 +110,7 @@ public class PaillierTests {
 
 			CircuitEvaluator evaluator = getCircuitEvaluator();
 			BigInteger[] outValues = evaluator.getWiresValues(getOutWires().toArray(new Wire[0]));
-			return Util.group(outValues, 32);
+			return Util.group(outValues, LongElement.CHUNK_BITWIDTH);
 		}
 	}
 
@@ -164,7 +164,7 @@ public class PaillierTests {
 
 			CircuitEvaluator evaluator = getCircuitEvaluator();
 			BigInteger[] outValues = evaluator.getWiresValues(getOutWires().toArray(new Wire[0]));
-			return Util.group(outValues, 32);
+			return Util.group(outValues, LongElement.CHUNK_BITWIDTH);
 		}
 	}
 }

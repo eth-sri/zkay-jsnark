@@ -43,6 +43,6 @@ public class ZkayPaillierEncGadget extends Gadget {
 
 	@Override
 	public Wire[] getOutputWires() {
-		return cipher.getBits(nSquareMaxBits).packBitsIntoWords(32);
+		return cipher.getArray();
 	}
 }
