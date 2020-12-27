@@ -212,19 +212,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     }
 
     protected void addK(String name, int size) {
-        int csize; // Use switch expression once Java >= 12
-        switch (cryptoBackend) {
-            case RSA_OAEP:
-            case RSA_PKCS15:
-                csize = ZKAY_RSA_CHUNK_SIZE;
-                break;
-            case PAILLIER:
-                csize = LongElement.CHUNK_BITWIDTH;
-                break;
-            default:
-                csize = 256;
-        }
-
+        int csize = getKeyChunkSize();
         Wire[] input = addIO("in", name, pub_in_names, all_pub_io_wires, current_pub_in_idx, size, ZkUint(csize), false);
         current_pub_in_idx += size;
 
@@ -250,6 +238,18 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
             WireArray keybits = new WireArray(input).getBits(csize, name + "_bits").adjustLength(keyBits);
             LongElement l = new LongElement(keybits);
             keys.put(getQualifiedName(name), l);
+        }
+    }
+
+    private int getKeyChunkSize() {
+        switch (cryptoBackend) {
+            case RSA_OAEP:
+            case RSA_PKCS15:
+                return ZKAY_RSA_CHUNK_SIZE;
+            case PAILLIER:
+                return LongElement.CHUNK_BITWIDTH;
+            default:
+                return 256;
         }
     }
 
