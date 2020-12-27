@@ -17,7 +17,9 @@ public class ZkayPaillierEncGadget extends Gadget {
 	private final LongElement random;
 	private LongElement cipher;
 
-	public ZkayPaillierEncGadget(LongElement n, int nBits, LongElement generator, LongElement plain, LongElement random) {
+	public ZkayPaillierEncGadget(LongElement n, int nBits, LongElement generator, LongElement plain, LongElement random,
+	                             String... desc) {
+		super(desc);
 		this.n = n;
 		this.nBits = nBits;
 		this.nSquareMaxBits = 2 * nBits; // Maximum bit length of n^2

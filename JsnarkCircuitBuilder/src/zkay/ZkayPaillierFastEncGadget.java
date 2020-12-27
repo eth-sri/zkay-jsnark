@@ -3,6 +3,7 @@ package zkay;
 import circuit.auxiliary.LongElement;
 import circuit.operations.Gadget;
 import circuit.structure.Wire;
+import circuit.structure.WireArray;
 import examples.gadgets.math.LongIntegerModGadget;
 import examples.gadgets.math.LongIntegerModPowGadget;
 
@@ -18,7 +19,14 @@ public class ZkayPaillierFastEncGadget extends Gadget {
 	private final LongElement random;
 	private LongElement cipher;
 
-	public ZkayPaillierFastEncGadget(LongElement n, int nBits, LongElement plain, LongElement random) {
+	public ZkayPaillierFastEncGadget(Wire[] plain, LongElement key, Wire[] random, int keyBits, String... desc) {
+		this(key, keyBits,
+				new LongElement(new WireArray(plain).getBits(256)),
+				new LongElement(new WireArray(random).getBits(LongElement.CHUNK_BITWIDTH)), desc);
+	}
+
+	public ZkayPaillierFastEncGadget(LongElement n, int nBits, LongElement plain, LongElement random, String... desc) {
+		super(desc);
 		this.n = n;
 		this.nBits = nBits;
 		this.nSquareMaxBits = 2 * nBits; // Maximum bit length of n^2

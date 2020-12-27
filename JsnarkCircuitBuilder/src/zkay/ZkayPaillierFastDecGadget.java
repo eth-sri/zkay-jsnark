@@ -21,7 +21,8 @@ public class ZkayPaillierFastDecGadget extends Gadget {
 	private final LongElement cipher;
 	private LongElement plain;
 
-	public ZkayPaillierFastDecGadget(LongElement n, int nBits, LongElement lambda, LongElement cipher) {
+	public ZkayPaillierFastDecGadget(LongElement n, int nBits, LongElement lambda, LongElement cipher, String... desc) {
+		super(desc);
 		this.n = n;
 		this.nBits = nBits;
 		int nSquareMaxBits = 2 * nBits;

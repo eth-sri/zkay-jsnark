@@ -29,6 +29,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         RSA_PKCS15,
         ECDH_AES,
         ECDH_CHASKEY,
+        PAILLIER
     }
 
     /** Whether to include comments for the more complex operations in the circuit.arith file */
@@ -91,6 +92,10 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
                 break;
             case "rsa-oaep":
                 this.cryptoBackend = CryptoBackend.RSA_OAEP;
+                this.isSymmetric = false;
+                break;
+            case "paillier":
+                this.cryptoBackend = CryptoBackend.PAILLIER;
                 this.isSymmetric = false;
                 break;
             default:
@@ -207,7 +212,19 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     }
 
     protected void addK(String name, int size) {
-        int csize = isSymmetric ? 256 : ZKAY_RSA_CHUNK_SIZE;
+        int csize; // Use switch expression once Java >= 12
+        switch (cryptoBackend) {
+            case RSA_OAEP:
+            case RSA_PKCS15:
+                csize = ZKAY_RSA_CHUNK_SIZE;
+                break;
+            case PAILLIER:
+                csize = LongElement.CHUNK_BITWIDTH;
+                break;
+            default:
+                csize = 256;
+        }
+
         Wire[] input = addIO("in", name, pub_in_names, all_pub_io_wires, current_pub_in_idx, size, ZkUint(csize), false);
         current_pub_in_idx += size;
 
@@ -230,7 +247,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
             sharedKeyGadget.validateInputs();
             sharedKeys.put(getQualifiedName(name), sharedKeyGadget.getOutputWires()[0]);
         } else {
-            WireArray keybits = new WireArray(input).getBits(ZKAY_RSA_CHUNK_SIZE, name + "_bits").adjustLength(keyBits);
+            WireArray keybits = new WireArray(input).getBits(csize, name + "_bits").adjustLength(keyBits);
             LongElement l = new LongElement(keybits);
             keys.put(getQualifiedName(name), l);
         }
@@ -493,6 +510,9 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
                 break;
             case RSA_PKCS15:
                 enc = new ZkayRSAEncryptionGadget(getArr(plain), getKey(key), getArr(rnd), keyBits, false, desc);
+                break;
+            case PAILLIER:
+                enc = new ZkayPaillierFastEncGadget(getArr(plain), getKey(key), getArr(rnd), keyBits, desc);
                 break;
             case DUMMY:
                 enc = new ZkayDummyEncryptionGadget(getArr(plain), getKey(key), getArr(rnd), keyBits, desc);

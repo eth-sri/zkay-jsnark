@@ -22,7 +22,9 @@ public class ZkayPaillierDecGadget extends Gadget {
 	private final LongElement cipher;
 	private LongElement plain;
 
-	public ZkayPaillierDecGadget(LongElement n, int nBits, LongElement lambda, LongElement mu, LongElement cipher) {
+	public ZkayPaillierDecGadget(LongElement n, int nBits, LongElement lambda, LongElement mu, LongElement cipher,
+	                             String... desc) {
+		super(desc);
 		this.n = n;
 		this.nBits = nBits;
 		int nSquareMaxBits = 2 * nBits;
