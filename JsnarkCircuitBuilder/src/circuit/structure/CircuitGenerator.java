@@ -89,7 +89,9 @@ public abstract class CircuitGenerator {
 		initCircuitConstruction();
 		buildCircuit();
 		
-		System.out.println("Circuit Generation Done for < " + circuitName + " >  \n \t Total Number of Constraints :  " + getNumOfConstraints() + "\n");
+		System.out.println("Circuit Generation Done for < " + circuitName + " >  " +
+				"\n \t Total Number of Constraints :  " + getNumOfConstraints() +
+				"\n \t Total Number of Wires : " + getNumWires());
 	}
 
 	public String getName() {
