@@ -13,19 +13,11 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 
 public class ZkayUtil {
-    // These chunk sizes assume a plaintext <= 256 (253) bit.
-    // If this should change in the future, the optimal chunk size should be computed on demand based on the plaintext size
-    // (optimal: pick such that data has 1. least amount of chunks, 2. for that chunk amount least possible bit amount)
-    public static final int ZKAY_SYMM_CIPHER_CHUNK_SIZE = 192;
-    public static final int ZKAY_RSA_CHUNK_SIZE = 232;
-    public static final int ZKAY_DUMMY_CHUNK_SIZE = 248;
 
-    public static final int ZKAY_RSA_PKCS15_RND_CHUNK_SIZE = 224;
-    public static final int ZKAY_RSA_OAEP_RND_CHUNK_SIZE = 128;
     public static final boolean ZKAY_RESTRICT_EVERYTHING = false; // if set to true for debugging, each typed wire constructor restricts bitwidth (rather than just private inputs)
 
-    public static Wire[] reverseBytes(WireArray bit_array, int targetWordBits) {
-        return new WireArray(Util.reverseBytes(bit_array.asArray())).packBitsIntoWords(targetWordBits);
+    public static Wire[] reverseBytes(WireArray bitArray, int targetWordBits) {
+        return new WireArray(Util.reverseBytes(bitArray.asArray())).packBitsIntoWords(targetWordBits);
     }
 
     public static BigInteger unsignedBytesToBigInt(byte[] bytes) {
@@ -51,13 +43,13 @@ public class ZkayUtil {
         return ret;
     }
 
-    public static byte[] unsignedBigintToBytes(BigInteger val, int byte_count) {
+    public static byte[] unsignedBigintToBytes(BigInteger val, int byteCount) {
         byte[] t = unsignedBigintToBytes(val);
-        if (t.length > byte_count) {
-            throw new IllegalArgumentException("Value too large to fit into " + byte_count + " bytes");
+        if (t.length > byteCount) {
+            throw new IllegalArgumentException("Value too large to fit into " + byteCount + " bytes");
         }
-        byte[] ret = new byte[byte_count];
-        System.arraycopy(t, 0, ret, byte_count - t.length, t.length);
+        byte[] ret = new byte[byteCount];
+        System.arraycopy(t, 0, ret, byteCount - t.length, t.length);
         return ret;
     }
 

@@ -28,11 +28,11 @@ import circuit.structure.WireArray;
 
 public class LongElement {
 
-	private Wire[] array;
-	private int[] currentBitwidth;
-	private BigInteger[] currentMaxValues;
-	private WireArray bits;
-	private CircuitGenerator generator;
+	private final Wire[] array;
+	private final int[] currentBitwidth;
+	private final BigInteger[] currentMaxValues;
+	private final CircuitGenerator generator;
+	private WireArray bits = null;
 
 	// Should be declared as final, but left non-final for testing purposes.
 	// Don't change in the middle of circuit generation.

@@ -10,33 +10,36 @@ import circuit.structure.Wire;
 
 import java.util.Arrays;
 
-public class ZkayDummyEncryptionGadget extends Gadget {
-    private Wire _pk;
-    private Wire[] _plain;
-    private Wire[] _cipher;
+import static zkay.crypto.DummyBackend.CIPHER_CHUNK_SIZE;
 
-    public ZkayDummyEncryptionGadget(Wire[] plain, LongElement pk, Wire[] rnd, int key_bits, String... desc) {
+public class ZkayDummyEncryptionGadget extends Gadget {
+
+    private final Wire pk;
+    private final Wire[] plain;
+    private final Wire[] cipher;
+
+    public ZkayDummyEncryptionGadget(Wire[] plain, LongElement pk, Wire[] rnd, int keyBits, String... desc) {
         super(desc);
         if (plain == null || pk == null || rnd == null) {
             throw new RuntimeException();
         }
-        this._plain = plain;
+        this.plain = plain;
         Wire[] pkarr = pk.getBits().packBitsIntoWords(256);
         for (int i = 1; i < pkarr.length; ++i) {
             generator.addZeroAssertion(pkarr[i], "Dummy enc pk valid");
         }
-        this._pk = pkarr[0];
-        this._cipher = new Wire[(int)Math.ceil((1.0*key_bits)/ZkayUtil.ZKAY_DUMMY_CHUNK_SIZE)];
+        this.pk = pkarr[0];
+        this.cipher = new Wire[(int)Math.ceil((1.0*keyBits) / CIPHER_CHUNK_SIZE)];
         buildCircuit();
     }
 
     protected void buildCircuit() {
-        Wire res = _plain[0].add(_pk, "plain + pk");
-        Arrays.fill(_cipher, res);
+        Wire res = plain[0].add(pk, "plain + pk");
+        Arrays.fill(cipher, res);
     }
 
     @Override
     public Wire[] getOutputWires() {
-        return _cipher;
+        return cipher;
     }
 }

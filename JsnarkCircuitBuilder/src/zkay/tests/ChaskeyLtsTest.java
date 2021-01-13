@@ -10,6 +10,7 @@ import zkay.ChaskeyLTSEngine;
 import zkay.ChaskeyLtsCbc;
 import zkay.ZkayCBCSymmetricEncGadget;
 import zkay.ZkayUtil;
+import zkay.crypto.CryptoBackend;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -85,11 +86,12 @@ public class ChaskeyLtsTest {
         CircuitGenerator cgen = new CircuitGenerator("cbcchaskey") {
             @Override
             protected void buildCircuit() {
-                Wire[] plainwire = new Wire[]{createConstantWire(plain)};
+                Wire[] plainwire = {createConstantWire(plain)};
                 Wire ivwire = createConstantWire(iv);
                 Wire keywire = createConstantWire(key);
 
-                makeOutputArray(new ZkayCBCSymmetricEncGadget(plainwire, keywire, ivwire, "chaskey").getOutputWires());
+                makeOutputArray(new ZkayCBCSymmetricEncGadget(plainwire, keywire, ivwire,
+                        ZkayCBCSymmetricEncGadget.CipherType.CHASKEY).getOutputWires());
             }
 
             @Override
@@ -119,7 +121,7 @@ public class ChaskeyLtsTest {
         System.arraycopy(iv_bytes, 0, iv_cipher, 0, iv_bytes.length);
         System.arraycopy(result, 0, iv_cipher, iv_bytes.length, result.length);
 
-        int chunk_size = ZkayUtil.ZKAY_SYMM_CIPHER_CHUNK_SIZE / 8;
+        int chunk_size = CryptoBackend.Symmetric.CIPHER_CHUNK_SIZE / 8;
         int first_chunk_size = iv_cipher.length % chunk_size;
         List<BigInteger> bigints = new ArrayList<>();
         if (first_chunk_size != 0) {
