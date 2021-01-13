@@ -28,10 +28,11 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
      * Whether to include comments for the more complex operations in the circuit.arith file
      */
     private static final boolean ADD_OP_LABELS = true;
+    private static final Object LEGACY_CRYPTO_BACKEND = new Object();
 
     protected final String realCircuitName;
 
-    private final CryptoBackend cryptoBackend;
+    private final Map<Object, CryptoBackend> cryptoBackends = new HashMap<>();
 
     private int currentPubInIdx = 0;
     private int currentPubOutIdx;
@@ -58,10 +59,17 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     private final Deque<Deque<String>> guardPrefixes = new ArrayDeque<>();
     private final Deque<Map<String, Integer>> guardPrefixIndices = new ArrayDeque<>();
 
+    @Deprecated
     public ZkayCircuitBase(String name, String cryptoBackend, int keyBits, int pubInSize, int pubOutSize, int privSize, boolean useInputHashing) {
+        this(name, pubInSize, pubOutSize, privSize, useInputHashing);
+
+        // Legacy handling: add default "main" crypto backend
+        this.cryptoBackends.put(LEGACY_CRYPTO_BACKEND, CryptoBackend.create(cryptoBackend, keyBits));
+    }
+
+    public ZkayCircuitBase(String name, int pubInSize, int pubOutSize, int privSize, boolean useInputHashing) {
         super("circuit");
         this.realCircuitName = name;
-        this.cryptoBackend = CryptoBackend.create(cryptoBackend, keyBits);
 
         this.pubInCount = pubInSize;
         this.currentPubOutIdx = pubInSize;
@@ -135,11 +143,12 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         }
         privInArray = createProverWitnessWireArray(allPrivInWires.length, "priv_");
 
-        if (cryptoBackend.isSymmetric()) {
-            CryptoBackend.Symmetric symmetricCrypto = (CryptoBackend.Symmetric) cryptoBackend;
-            Wire mySk = privInArray[0];
+        // Legacy handling
+        CryptoBackend legacyCryptoBackend = cryptoBackends.get(LEGACY_CRYPTO_BACKEND);
+        if (legacyCryptoBackend != null && legacyCryptoBackend.isSymmetric()) {
             Wire myPk = inArray[0];
-            symmetricCrypto.setKeyPair(myPk, mySk);
+            Wire mySk = privInArray[0];
+            setKeyPair(LEGACY_CRYPTO_BACKEND, myPk, mySk);
         }
 
         System.arraycopy(inArray, 0, allPubIOWires, 0, pubInCount);
@@ -161,6 +170,34 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return input;
     }
 
+    /* CRYPTO BACKENDS */
+
+    protected void addCryptoBackend(Object cryptoBackendId, String cryptoBackendName, int keyBits) {
+        this.cryptoBackends.put(cryptoBackendId, CryptoBackend.create(cryptoBackendName, keyBits));
+    }
+
+    protected void setKeyPair(Object cryptoBackendId, String pkName, String skName) {
+        setKeyPair(cryptoBackendId, get(pkName).wire, get(skName).wire);
+    }
+
+    private void setKeyPair(Object cryptoBackendId, Wire myPk, Wire mySk) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
+        if (!cryptoBackend.isSymmetric()) {
+            throw new IllegalArgumentException("Crypto backend is not symmetric");
+        }
+
+        CryptoBackend.Symmetric symmetricCrypto = (CryptoBackend.Symmetric) cryptoBackend;
+        symmetricCrypto.setKeyPair(myPk, mySk);
+    }
+
+    private CryptoBackend getCryptoBackend(Object cryptoBackendId) {
+        CryptoBackend backend = cryptoBackends.get(cryptoBackendId);
+        if (backend == null) {
+            throw new IllegalArgumentException("Unknown crypto backend: " + cryptoBackendId);
+        }
+        return backend;
+    }
+
     /* CIRCUIT IO */
 
     protected void addIn(String name, int size, ZkayType t) {
@@ -168,11 +205,17 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         currentPubInIdx += size;
     }
 
-    protected void addK(String name, int size) {
+    protected void addK(Object cryptoBackendId, String name, int size) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
         int chunkSize = cryptoBackend.getKeyChunkSize();
         Wire[] input = addIO("in", name, pubInNames, allPubIOWires, currentPubInIdx, size, ZkUint(chunkSize), false);
         currentPubInIdx += size;
         cryptoBackend.addKey(getQualifiedName(name), input);
+    }
+
+    @Deprecated
+    protected void addK(String name, int size) {
+        addK(LEGACY_CRYPTO_BACKEND, name, size);
     }
 
     protected void addOut(String name, int size, ZkayType t) {
@@ -447,7 +490,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return new TypedWire(newWire, targetType, String.format("(%s) %s", targetType, w.name));
     }
 
-    private Wire[] cryptoEnc(String plain, String key, String rnd, boolean isDec) {
+    private Wire[] cryptoEnc(CryptoBackend cryptoBackend, String plain, String key, String rnd, boolean isDec) {
         if (cryptoBackend.isSymmetric()) {
             throw new IllegalArgumentException("Crypto backend is not asymmetric");
         }
@@ -458,7 +501,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return enc.getOutputWires();
     }
 
-    private Wire[] cryptoSymmEnc(String plain, String otherPk, String ivCipher, boolean isDec) {
+    private Wire[] cryptoSymmEnc(CryptoBackend cryptoBackend, String plain, String otherPk, String ivCipher, boolean isDec) {
         if (!cryptoBackend.isSymmetric()) {
             throw new IllegalArgumentException("Crypto backend is not symmetric");
         }
@@ -481,12 +524,14 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Asymmetric Encryption
      */
-    protected void checkEnc(String plain, String key, String rnd, String expectedCipher) {
+    protected void checkEnc(Object cryptoBackendId, String plain, String key, String rnd, String expectedCipher) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
+
         // 1. Check that expected cipher != 0 (since 0 is reserved for default initialization)
         addGuardedNonZeroAssertion(getArr(expectedCipher), expectedCipher);
 
         // 2. Encrypt
-        Wire[] computedCipher = cryptoEnc(plain, key, rnd, false);
+        Wire[] computedCipher = cryptoEnc(cryptoBackend, plain, key, rnd, false);
 
         // 3. Check encryption == expected cipher
         addGuardedEncryptionAssertion(expectedCipher, computedCipher);
@@ -495,12 +540,14 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Symmetric Encryption
      */
-    protected void checkEnc(String plain, String otherPk, String ivCipher) {
+    protected void checkEnc(Object cryptoBackendId, String plain, String otherPk, String ivCipher) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
+
         // 1. Check that expected cipher != 0 (since 0 is reserved for default initialization)
         addGuardedNonZeroAssertion(getArr(ivCipher), ivCipher);
 
         // 2. Encrypt
-        Wire[] computedCipher = cryptoSymmEnc(plain, otherPk, ivCipher, false);
+        Wire[] computedCipher = cryptoSymmEnc(cryptoBackend, plain, otherPk, ivCipher, false);
 
         // 3. Check encryption == expected cipher
         addGuardedEncryptionAssertion(ivCipher, computedCipher);
@@ -509,9 +556,11 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Asymmetric Decryption
      */
-    protected void checkDec(String plain, String key, String rnd, String expectedCipher) {
+    protected void checkDec(Object cryptoBackendId, String plain, String key, String rnd, String expectedCipher) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
+
         // 1. Decrypt [dec(cipher, rnd, sk) -> enc(plain, rnd, pk)] (compute inverse op)
-        Wire[] computedCipher = cryptoEnc(plain, key, rnd, true);
+        Wire[] computedCipher = cryptoEnc(cryptoBackend, plain, key, rnd, true);
 
         Wire[] expCipher = getArr(expectedCipher);
         Wire expCipherIsNonZero = isNonZero(expCipher, expectedCipher); // "!= 0"
@@ -529,9 +578,11 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Symmetric Decryption
      */
-    protected void checkDec(String plain, String otherPk, String ivCipher) {
+    protected void checkDec(Object cryptoBackendId, String plain, String otherPk, String ivCipher) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
+
         // 1. Decrypt [dec(cipher, rnd, sk) -> encSymm(plain, ecdh(mySk, otherPk), iv)] (compute inverse op)
-        Wire[] computedCipher = cryptoSymmEnc(plain, otherPk, ivCipher, true);
+        Wire[] computedCipher = cryptoSymmEnc(cryptoBackend, plain, otherPk, ivCipher, true);
 
         Wire[] expIvCipher = getArr(ivCipher);
         Wire expCipherNonZero = isNonZero(expIvCipher, ivCipher);
@@ -555,6 +606,28 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         Wire cipherZeroOrPkZero = expCipherZero.or(otherPkZero);
         addGuardedOneAssertion(cipherZeroOrPkZero.or(isEqual(expIvCipher, ivCipher, computedCipher, "cipher")),
                 ADD_OP_LABELS ? String.format("(%s != 0 && %s != 0) => %s == %s", ivCipher, otherPk, ivCipher, "cipher") : "");
+    }
+
+    // Legacy handling
+
+    @Deprecated
+    protected void checkEnc(String plain, String key, String rnd, String expectedCipher) {
+        checkEnc(LEGACY_CRYPTO_BACKEND, plain, key, rnd, expectedCipher);
+    }
+
+    @Deprecated
+    protected void checkEnc(String plain, String otherPk, String ivCipher) {
+        checkEnc(LEGACY_CRYPTO_BACKEND, plain, otherPk, ivCipher);
+    }
+
+    @Deprecated
+    protected void checkDec(String plain, String key, String rnd, String expectedCipher) {
+        checkDec(LEGACY_CRYPTO_BACKEND, plain, key, rnd, expectedCipher);
+    }
+
+    @Deprecated
+    protected void checkDec(String plain, String otherPk, String ivCipher) {
+        checkDec(LEGACY_CRYPTO_BACKEND, plain, otherPk, ivCipher);
     }
 
     protected void checkEq(String lhs, String rhs) {
