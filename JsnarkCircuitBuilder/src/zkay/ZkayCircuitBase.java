@@ -11,6 +11,7 @@ import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
 import circuit.structure.WireArray;
 import zkay.crypto.CryptoBackend;
+import zkay.crypto.HomomorphicBackend;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -201,6 +202,15 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return backend;
     }
 
+    private HomomorphicBackend getHomomorphicCryptoBackend(Object cryptoBackendId) {
+        CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
+        if (cryptoBackend instanceof HomomorphicBackend) {
+            return (HomomorphicBackend) cryptoBackend;
+        } else {
+            throw new IllegalArgumentException("Crypto backend " + cryptoBackendId + " is not homomorphic");
+        }
+    }
+
     /* CIRCUIT IO */
 
     protected void addIn(String name, int size, ZkayType t) {
@@ -366,6 +376,30 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
             default:
                 throw new IllegalArgumentException();
         }
+    }
+
+    /* Homomorphic operations */
+
+    public TypedWire[] o_hom(String cryptoBackendId, String key, char op, String cipher) {
+        HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
+        return backend.doHomomorphicOp(op, getTypedArr(cipher), getQualifiedName(key));
+    }
+
+    public TypedWire[] o_hom(String cryptoBackendId, String key, String lhs, char op, String rhs) {
+        HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
+        return backend.doHomomorphicOp(getTypedArr(lhs), op, getTypedArr(rhs), getQualifiedName(key));
+    }
+
+    public TypedWire[] o_hom(String cryptoBackendId, String key, String cond, char condChar,
+                        String trueVal, char altChar, String falseVal) {
+        if (condChar != '?' || altChar != ':') throw new IllegalArgumentException();
+        HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
+        return backend.doHomomorphicCond(getTypedArr(cond), getTypedArr(trueVal), getTypedArr(falseVal), getQualifiedName(key));
+    }
+
+    public TypedWire[] o_hom(String cryptoBackendId, String key, String lhs, String op, String rhs) {
+        HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
+        return backend.doHomomorphicOp(getTypedArr(lhs), op, getTypedArr(rhs), getQualifiedName(key));
     }
 
     /* TYPE CASTING */
@@ -718,12 +752,17 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         }
     }
 
-    private Wire[] getArr(String name) {
+    private TypedWire[] getTypedArr(String name) {
         name = getQualifiedName(name);
         TypedWire[] w = vars.get(name);
         if (w == null) {
             throw new RuntimeException("Variable " + name + " is not associated with a wire");
         }
+        return w;
+    }
+
+    private Wire[] getArr(String name) {
+        TypedWire[] w = getTypedArr(name);
         Wire[] wa = new Wire[w.length];
         for (int i = 0; i < w.length; ++i) {
             wa[i] = w[i].wire;
