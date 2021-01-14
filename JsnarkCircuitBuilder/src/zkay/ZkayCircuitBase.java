@@ -173,6 +173,9 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /* CRYPTO BACKENDS */
 
     protected void addCryptoBackend(Object cryptoBackendId, String cryptoBackendName, int keyBits) {
+        if (this.cryptoBackends.containsKey(cryptoBackendId)) {
+            throw new IllegalStateException("Crypto backend " + cryptoBackendId + " already registered");
+        }
         this.cryptoBackends.put(cryptoBackendId, CryptoBackend.create(cryptoBackendName, keyBits));
     }
 
