@@ -19,6 +19,7 @@ public abstract class CryptoBackend {
 
 	private enum Backend {
 		DUMMY("dummy", DummyBackend::new),
+		DUMMY_HOM("dummy-hom", DummyHomBackend::new),
 		ECDH_AES("ecdh-aes", keyBits -> new ECDHBackend(keyBits, ZkayCBCSymmetricEncGadget.CipherType.AES_128)),
 		ECDH_CHASKEY("ecdh-chaskey", keyBits -> new ECDHBackend(keyBits, ZkayCBCSymmetricEncGadget.CipherType.CHASKEY)),
 		PAILLIER("paillier", PaillierBackend::new),

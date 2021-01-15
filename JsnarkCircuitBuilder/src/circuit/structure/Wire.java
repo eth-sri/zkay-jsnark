@@ -131,6 +131,10 @@ public class Wire {
 		return sub(generator.createConstantWire(b, desc), desc);
 	}
 
+	public Wire negate(String... desc) {
+		return generator.getZeroWire().sub(this, desc);
+	}
+
 	public Wire mux(Wire trueValue, Wire falseValue) {
 		return falseValue.add(this.mul(trueValue.sub(falseValue)));
 	}
