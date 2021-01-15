@@ -479,6 +479,40 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         }
     }
 
+    protected void decl(String lhs, TypedWire[] val) {
+        if (val == null || val.length == 0) throw new IllegalArgumentException("val");
+        if (val[0].type == null) throw new IllegalArgumentException("Tried to use untyped wires");
+        // Check that all types match; else this gets really strange
+        for (int i = 0; i < val.length - 1; ++i) {
+            checkType(val[i].type, val[i + 1].type);
+        }
+
+        // Get old value and check type and length
+        TypedWire[] oldVal;
+        if (vars.containsKey(lhs)) {
+            oldVal = getTypedArr(lhs);
+            checkType(oldVal[0].type, val[0].type);
+            if (val.length != oldVal.length) {
+                throw new IllegalArgumentException("Wire amounts differ - old = " + oldVal.length + ", new = " + val.length);
+            }
+        } else {
+            oldVal = new TypedWire[val.length];
+            Arrays.fill(oldVal, val(0, val[0].type));
+        }
+
+        // Only assign value if guard condition is met
+        TypedWire[] resVal = new TypedWire[val.length];
+        TypedWire guard = currentGuardCondition.peek(); // Null if empty
+        for (int i = 0; i < val.length; ++i) {
+            if (guard == null) {
+                resVal[i] = new TypedWire(val[i].wire, val[i].type, lhs); // No guard, just rename
+            } else {
+                resVal[i] = new TypedWire(condExpr(guard.wire, val[i].wire, oldVal[i].wire), val[i].type, lhs);
+            }
+        }
+        set(lhs, resVal);
+    }
+
     private Wire condExpr(Wire cond, Wire trueVal, Wire falseVal) {
         if (ZkayUtil.ZKAY_RESTRICT_EVERYTHING) {
             addBinaryAssertion(cond);
