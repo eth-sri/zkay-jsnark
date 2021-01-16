@@ -611,7 +611,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Symmetric Encryption
      */
-    protected void checkEnc(Object cryptoBackendId, String plain, String otherPk, String ivCipher) {
+    protected void checkSymmEnc(Object cryptoBackendId, String plain, String otherPk, String ivCipher) {
         CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
 
         // 1. Check that expected cipher != 0 (since 0 is reserved for default initialization)
@@ -649,7 +649,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Symmetric Decryption
      */
-    protected void checkDec(Object cryptoBackendId, String plain, String otherPk, String ivCipher) {
+    protected void checkSymmDec(Object cryptoBackendId, String plain, String otherPk, String ivCipher) {
         CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
 
         // 1. Decrypt [dec(cipher, rnd, sk) -> encSymm(plain, ecdh(mySk, otherPk), iv)] (compute inverse op)
@@ -688,7 +688,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
 
     @Deprecated
     protected void checkEnc(String plain, String otherPk, String ivCipher) {
-        checkEnc(LEGACY_CRYPTO_BACKEND, plain, otherPk, ivCipher);
+        checkSymmEnc(LEGACY_CRYPTO_BACKEND, plain, otherPk, ivCipher);
     }
 
     @Deprecated
@@ -698,7 +698,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
 
     @Deprecated
     protected void checkDec(String plain, String otherPk, String ivCipher) {
-        checkDec(LEGACY_CRYPTO_BACKEND, plain, otherPk, ivCipher);
+        checkSymmDec(LEGACY_CRYPTO_BACKEND, plain, otherPk, ivCipher);
     }
 
     protected void checkEq(String lhs, String rhs) {
