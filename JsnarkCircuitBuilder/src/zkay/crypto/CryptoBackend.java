@@ -65,12 +65,14 @@ public abstract class CryptoBackend {
 		// (optimal: pick such that data has 1. least amount of chunks, 2. for that chunk amount least possible bit amount)
 		public static final int CIPHER_CHUNK_SIZE = 192;
 
+		private final Map<String, Wire> publicKeys;
 		protected final Map<String, Wire> sharedKeys;
 		protected Wire myPk = null;
 		protected Wire mySk = null;
 
 		protected Symmetric(int keyBits) {
 			super(keyBits);
+			publicKeys = new HashMap<>();
 			sharedKeys = new HashMap<>();
 		}
 
@@ -84,35 +86,46 @@ public abstract class CryptoBackend {
 			if (keyWires.length != 1) {
 				throw new IllegalArgumentException("Expected key size 1uint for symmetric keys");
 			}
+			publicKeys.put(keyName, keyWires[0]);
+		}
+
+		protected Wire getKey(String keyName) {
+			Wire key = sharedKeys.get(keyName);
+			if (key == null) {
+				key = computeKey(keyName);
+				sharedKeys.put(keyName, key);
+			}
+			return key;
+		}
+
+		private Wire computeKey(String keyName) {
+			if (myPk == null) {
+				throw new IllegalStateException("setKeyPair not called on symmetric crypto backend");
+			}
 
 			// Get other public key
 			// In the case of decryption with default-initialization, it is possible that the sender pk stored in the
 			// cipher struct is 0. In that case -> replace with any valid pk (my_pk for simplicity), to prevent ecdh gadget
 			// from crashing (wrong output is not a problem since decryption enforces (pk_zero || cipher_zero) => all_zero
 			// and ignores the ecdh result in that case.
-			Wire actualOtherPk = keyWires[0];
+			Wire actualOtherPk = publicKeys.get(keyName);
+			if (actualOtherPk == null) {
+				throw new IllegalStateException("Key variable " + keyName + " is absent");
+			}
 			actualOtherPk = actualOtherPk.checkNonZero(keyName + " != 0").mux(actualOtherPk, myPk);
 
-			// PreCompute shared key with me
+			// Compute shared key with me
 			String desc = String.format("sha256(ecdh(%s, %s))", keyName, mySk);
 			ZkayECDHGadget sharedKeyGadget = new ZkayECDHGadget(actualOtherPk, mySk, false, desc);
 			sharedKeyGadget.validateInputs();
-			sharedKeys.put(keyName, sharedKeyGadget.getOutputWires()[0]);
-		}
-
-		protected Wire getKey(String keyName) {
-			Wire key = sharedKeys.get(keyName);
-			if (key == null) {
-				throw new IllegalStateException("Key variable " + keyName + " is absent");
-			}
-			return key;
+			return sharedKeyGadget.getOutputWires()[0];
 		}
 
 		public void setKeyPair(Wire myPk, Wire mySk) {
 			Objects.requireNonNull(myPk);
 			Objects.requireNonNull(mySk);
 			if (this.myPk != null) {
-				throw new IllegalStateException("Keypair already set");
+				throw new IllegalStateException("Key pair already set");
 			}
 
 			// Ensure that provided sender keys form a key pair
