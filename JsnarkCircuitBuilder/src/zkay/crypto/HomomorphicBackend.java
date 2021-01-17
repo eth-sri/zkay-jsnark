@@ -1,5 +1,6 @@
 package zkay.crypto;
 
+import zkay.HomomorphicInput;
 import zkay.TypedWire;
 
 public interface HomomorphicBackend {
@@ -9,8 +10,8 @@ public interface HomomorphicBackend {
 	 *
 	 * @param op
 	 * 		a char identifying the operation; one of {'-', '~', '!'}
-	 * @param cipher
-	 * 		the ciphertext of the operand
+	 * @param arg
+	 * 		the operand, either a ciphertext or a plain wire
 	 * @param keyName
 	 * 		the qualified name of the key to be used
 	 *
@@ -19,7 +20,7 @@ public interface HomomorphicBackend {
 	 * @throws UnsupportedOperationException
 	 * 		if the backend does not support operation 'op'
 	 */
-	default TypedWire[] doHomomorphicOp(char op, TypedWire[] cipher, String keyName) {
+	default TypedWire[] doHomomorphicOp(char op, HomomorphicInput arg, String keyName) {
 		throw new UnsupportedOperationException("Unary operation " + op + " not supported");
 	}
 
@@ -27,11 +28,11 @@ public interface HomomorphicBackend {
 	 * Perform the binary homomorphic operation 'op' on the ciphertexts 'lhs' and 'rhs'.
 	 *
 	 * @param lhs
-	 * 		the ciphertext of the left-hand side operand
+	 * 		the left-hand side operand, either a ciphertext or a plain wire
 	 * @param op
 	 * 		a char identifying the operation; one of {'+', '-', '*', '/', '%', '|', '&', '^', '<', '>'}
 	 * @param rhs
-	 * 		the ciphertext of the right-hand side operand
+	 * 		the right-hand side operand, either a ciphertext or a plain wire
 	 * @param keyName
 	 * 		the qualified name of the key to be used
 	 *
@@ -40,7 +41,7 @@ public interface HomomorphicBackend {
 	 * @throws UnsupportedOperationException
 	 * 		if the backend does not support operation 'op'
 	 */
-	default TypedWire[] doHomomorphicOp(TypedWire[] lhs, char op, TypedWire[] rhs, String keyName) {
+	default TypedWire[] doHomomorphicOp(HomomorphicInput lhs, char op, HomomorphicInput rhs, String keyName) {
 		throw new UnsupportedOperationException("Binary operation " + op + " not supported");
 	}
 
@@ -48,11 +49,11 @@ public interface HomomorphicBackend {
 	 * Perform the boolean / comparison homomorphic operation 'op' on the ciphertexts 'lhs' and 'rhs'.
 	 *
 	 * @param lhs
-	 * 		the ciphertext of the left-hand side operand
+	 * 		the left-hand side operand, either a ciphertext or a plain wire
 	 * @param op
 	 * 		a char identifying the operation; one of {"==", "!=", "<=", ">=", "&&", "||"}
 	 * @param rhs
-	 * 		the ciphertext of the right-hand side operand
+	 * 		the right-hand side operand, either a ciphertext or a plain wire
 	 * @param keyName
 	 * 		the qualified name of the key to be used
 	 *
@@ -61,7 +62,7 @@ public interface HomomorphicBackend {
 	 * @throws UnsupportedOperationException
 	 * 		if the backend does not support operation 'op'
 	 */
-	default TypedWire[] doHomomorphicOp(TypedWire[] lhs, String op, TypedWire[] rhs, String keyName) {
+	default TypedWire[] doHomomorphicOp(HomomorphicInput lhs, String op, HomomorphicInput rhs, String keyName) {
 		throw new UnsupportedOperationException("Boolean / comparison operation " + op + " not supported");
 	}
 
@@ -69,11 +70,11 @@ public interface HomomorphicBackend {
 	 * Perform the ternary conditional operation on the ciphertexts 'cond', 'trueVal', 'falseVal'.
 	 *
 	 * @param cond
-	 * 		the ciphertext of the condition
+	 * 		the condition, either a ciphertext or a plain wire
 	 * @param trueVal
-	 * 		the ciphertext of the right-hand side operand
+	 * 		the value if cond is true, either a ciphertext or a plain wire
 	 * @param falseVal
-	 * 		the ciphertext of the right-hand side operand
+	 * 		the value if cond is false, either a ciphertext or a plain wire
 	 * @param keyName
 	 * 		the qualified name of the key to be used
 	 *
@@ -82,7 +83,7 @@ public interface HomomorphicBackend {
 	 * @throws UnsupportedOperationException
 	 * 		if the backend does not support operation 'op'
 	 */
-	default TypedWire[] doHomomorphicCond(TypedWire[] cond, TypedWire[] trueVal, TypedWire[] falseVal, String keyName) {
+	default TypedWire[] doHomomorphicCond(HomomorphicInput cond, HomomorphicInput trueVal, HomomorphicInput falseVal, String keyName) {
 		throw new UnsupportedOperationException("Ternary conditional not supported");
 	}
 }

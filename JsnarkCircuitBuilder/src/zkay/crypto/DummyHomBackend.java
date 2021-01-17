@@ -4,6 +4,7 @@ import circuit.auxiliary.LongElement;
 import circuit.operations.Gadget;
 import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
+import zkay.HomomorphicInput;
 import zkay.TypedWire;
 import zkay.ZkayDummyHomEncryptionGadget;
 import zkay.ZkayType;
@@ -27,36 +28,54 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 	}
 
 	@Override
-	public TypedWire[] doHomomorphicOp(char op, TypedWire[] cipher, String keyName) {
-		if (cipher == null || cipher.length != 1) throw new IllegalArgumentException("cipher");
+	public TypedWire[] doHomomorphicOp(char op, HomomorphicInput arg, String keyName) {
+		Wire cipher = getCipherWire(arg, "arg");
 
 		if (op == '-') {
 			// -Enc(msg, p) = -(msg * p) = (-msg) * p = Enc(-msg, p)
-			Wire minus = cipher[0].wire.negate();
-			return typed(minus, "-(" + cipher[0].name + ")");
+			Wire minus = cipher.negate();
+			return typed(minus, "-(" + arg.getName() + ")");
 		} else {
 			throw new UnsupportedOperationException("Unary operation " + op + " not supported");
 		}
 	}
 
 	@Override
-	public TypedWire[] doHomomorphicOp(TypedWire[] lhs, char op, TypedWire[] rhs, String keyName) {
-		if (lhs == null || lhs.length != 1) throw new IllegalArgumentException("lhs");
-		if (rhs == null || rhs.length != 1) throw new IllegalArgumentException("rhs");
-
+	public TypedWire[] doHomomorphicOp(HomomorphicInput lhs, char op, HomomorphicInput rhs, String keyName) {
 		switch (op) {
-			case '+':
+			case '+': {
 				// Enc(m1, p) + Enc(m2, p) = (m1 * p) + (m2 * p) = (m1 + m2) * p = Enc(m1 + m2, p)
-				Wire sum = lhs[0].wire.add(rhs[0].wire);
-				return typed(sum, "(" + lhs[0].name + ") + (" + rhs[0].name + ")");
-			case '-':
+				Wire l = getCipherWire(lhs, "lhs");
+				Wire r = getCipherWire(rhs, "rhs");
+				Wire sum = l.add(r);
+				return typed(sum, "(" + lhs.getName() + ") + (" + rhs.getName() + ")");
+			}
+			case '-': {
 				// Enc(m1, p) - Enc(m2, p) = (m1 * p) - (m2 * p) = (m1 - m2) * p = Enc(m1 - m2, p)
-				Wire diff = lhs[0].wire.sub(rhs[0].wire);
-				return typed(diff, "(" + lhs[0].name + ") - (" + rhs[0].name + ")");
-			case '*':
+				Wire l = getCipherWire(lhs, "lhs");
+				Wire r = getCipherWire(rhs, "rhs");
+				Wire diff = l.sub(r);
+				return typed(diff, "(" + lhs.getName() + ") - (" + rhs.getName() + ")");
+			}
+			case '*': {
+				Wire plain;
+				Wire cipher;
+				if (lhs == null) throw new IllegalArgumentException("lhs is null");
+				if (rhs == null) throw new IllegalArgumentException("rhs is null");
+				if (lhs.isPlain() && rhs.isCipher()) {
+					plain = lhs.getPlain().wire;
+					cipher = getCipherWire(rhs, "rhs");
+				} else if (lhs.isCipher() && rhs.isPlain()) {
+					cipher = getCipherWire(lhs, "lhs");
+					plain = rhs.getPlain().wire;
+				} else {
+					throw new IllegalArgumentException("DummyHom multiplication requires exactly 1 plaintext argument");
+				}
+
 				// Enc(m1, p) * m2 = (m1 * p) * m2 = (m1 * m2) * p = Enc(m1 * m2, p)
-				Wire prod = lhs[0].wire.mul(rhs[0].wire);
-				return typed(prod, "(" + lhs[0].name + ") - (" + rhs[0].name + ")");
+				Wire prod = cipher.mul(plain);
+				return typed(prod, "(" + lhs.getName() + ") - (" + rhs.getName() + ")");
+			}
 			default:
 				throw new UnsupportedOperationException("Binary operation " + op + " not supported");
 		}
@@ -71,6 +90,13 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 			generator.addZeroAssertion(keyArr[i], "Dummy-hom enc pk valid");
 		}
 		return keyArr[0];
+	}
+
+	private static Wire getCipherWire(HomomorphicInput input, String name) {
+		if (input == null) throw new IllegalArgumentException(name + " is null");
+		if (input.isPlain()) throw new IllegalArgumentException(name + " is not a ciphertext");
+		if (input.getLength() != 1) throw new IllegalArgumentException(name + " has invalid length");
+		return input.getCipher()[0].wire;
 	}
 
 	private static TypedWire[] typed(Wire wire, String name) {

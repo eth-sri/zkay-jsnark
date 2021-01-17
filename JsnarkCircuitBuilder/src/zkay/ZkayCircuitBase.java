@@ -380,26 +380,26 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
 
     /* Homomorphic operations */
 
-    public TypedWire[] o_hom(String cryptoBackendId, String key, char op, String cipher) {
+    public TypedWire[] o_hom(String cryptoBackendId, String key, char op, HomomorphicInput arg) {
         HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
-        return backend.doHomomorphicOp(op, getTypedArr(cipher), getQualifiedName(key));
+        return backend.doHomomorphicOp(op, arg, getQualifiedName(key));
     }
 
-    public TypedWire[] o_hom(String cryptoBackendId, String key, String lhs, char op, String rhs) {
+    public TypedWire[] o_hom(String cryptoBackendId, String key, HomomorphicInput lhs, char op, HomomorphicInput rhs) {
         HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
-        return backend.doHomomorphicOp(getTypedArr(lhs), op, getTypedArr(rhs), getQualifiedName(key));
+        return backend.doHomomorphicOp(lhs, op, rhs, getQualifiedName(key));
     }
 
-    public TypedWire[] o_hom(String cryptoBackendId, String key, String cond, char condChar,
-                        String trueVal, char altChar, String falseVal) {
+    public TypedWire[] o_hom(String cryptoBackendId, String key, HomomorphicInput cond, char condChar,
+                             HomomorphicInput trueVal, char altChar, HomomorphicInput falseVal) {
         if (condChar != '?' || altChar != ':') throw new IllegalArgumentException();
         HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
-        return backend.doHomomorphicCond(getTypedArr(cond), getTypedArr(trueVal), getTypedArr(falseVal), getQualifiedName(key));
+        return backend.doHomomorphicCond(cond, trueVal, falseVal, getQualifiedName(key));
     }
 
-    public TypedWire[] o_hom(String cryptoBackendId, String key, String lhs, String op, String rhs) {
+    public TypedWire[] o_hom(String cryptoBackendId, String key, HomomorphicInput lhs, String op, HomomorphicInput rhs) {
         HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
-        return backend.doHomomorphicOp(getTypedArr(lhs), op, getTypedArr(rhs), getQualifiedName(key));
+        return backend.doHomomorphicOp(lhs, op, rhs, getQualifiedName(key));
     }
 
     /* TYPE CASTING */
@@ -411,15 +411,15 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /* SOURCE */
 
     protected TypedWire get(String name) {
-        name = getQualifiedName(name);
-        TypedWire[] w = vars.get(name);
-        if (w == null) {
-            throw new RuntimeException("Variable " + name + " is not associated with a wire");
-        }
+        TypedWire[] w = getTypedArr(name);
         if (w.length != 1) {
             throw new RuntimeException("Tried to treat array as a single wire");
         }
         return w[0];
+    }
+
+    protected TypedWire[] getCipher(String name) {
+        return getTypedArr(name);
     }
 
     public TypedWire val(boolean val) {
