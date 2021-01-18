@@ -24,7 +24,7 @@ public class ZkayPaillierFastEncGadget extends Gadget {
 	public ZkayPaillierFastEncGadget(Wire[] plain, LongElement key, Wire[] random, int keyBits, String... desc) {
 		this(key, keyBits,
 				new LongElement(new WireArray(plain).getBits(256)),
-				new LongElement(new WireArray(random).getBits(RND_CHUNK_SIZE)), desc);
+				new LongElement(new WireArray(random).getBits(CHUNK_SIZE)), desc);
 	}
 
 	public ZkayPaillierFastEncGadget(LongElement n, int nBits, LongElement plain, LongElement random, String... desc) {
