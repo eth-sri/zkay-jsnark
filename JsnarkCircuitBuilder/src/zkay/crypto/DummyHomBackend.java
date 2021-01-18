@@ -96,11 +96,15 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 		if (input == null) throw new IllegalArgumentException(name + " is null");
 		if (input.isPlain()) throw new IllegalArgumentException(name + " is not a ciphertext");
 		if (input.getLength() != 1) throw new IllegalArgumentException(name + " has invalid length");
-		return input.getCipher()[0].wire;
+
+		// Transform input 0 to ciphertext 0 (= encryption of 0); serialized inputs x+1 to ciphertext x
+		Wire cipherWire = input.getCipher()[0].wire;
+		Wire isNonZero = cipherWire.checkNonZero();
+		return cipherWire.sub(isNonZero);
 	}
 
 	private static TypedWire[] typed(Wire wire, String name) {
 		// Always type cipher wires as ZkUint(256)
-		return new TypedWire[] {new TypedWire(wire, ZkayType.ZkUint(256), name)};
+		return new TypedWire[] {new TypedWire(wire.add(1), ZkayType.ZkUint(256), name)};
 	}
 }

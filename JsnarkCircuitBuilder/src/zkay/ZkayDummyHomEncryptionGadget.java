@@ -37,7 +37,7 @@ public class ZkayDummyHomEncryptionGadget extends Gadget {
 	}
 
 	protected void buildCircuit() {
-		cipher[0] = plain[0].mul(pk, "plain * pk");
+		cipher[0] = plain[0].mul(pk, "plain * pk").add(1);
 	}
 
 	@Override
