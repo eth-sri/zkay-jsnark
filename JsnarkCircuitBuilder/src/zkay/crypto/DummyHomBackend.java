@@ -24,7 +24,7 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 	}
 
 	@Override
-	public Gadget createEncryptionGadget(Wire[] plain, String key, Wire[] random, String... desc) {
+	public Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] random, String... desc) {
 		return new ZkayDummyHomEncryptionGadget(plain, getKeyWire(key), random, keyBits, desc);
 	}
 

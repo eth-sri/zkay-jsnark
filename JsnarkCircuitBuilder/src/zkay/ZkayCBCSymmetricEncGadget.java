@@ -36,9 +36,9 @@ public class ZkayCBCSymmetricEncGadget extends Gadget {
 	public static final int BLOCK_SIZE = 128;
 	public static final int KEY_SIZE = 128;
 
-	public ZkayCBCSymmetricEncGadget(Wire[] plaintext, Wire key, Wire iv, CipherType cipherType, String... desc) {
+	public ZkayCBCSymmetricEncGadget(TypedWire plaintext, Wire key, Wire iv, CipherType cipherType, String... desc) {
 		super(desc);
-		this.plaintextBits = Util.reverseBytes(new WireArray(plaintext).getBits(256).asArray());
+		this.plaintextBits = Util.reverseBytes(plaintext.wire.getBitWires(256).asArray());
 		this.keyBits = Util.reverseBytes(key.getBitWires(KEY_SIZE).asArray());
 		this.ivBits = Util.reverseBytes(iv.getBitWires(BLOCK_SIZE).asArray());
 		this.cipherType = cipherType;

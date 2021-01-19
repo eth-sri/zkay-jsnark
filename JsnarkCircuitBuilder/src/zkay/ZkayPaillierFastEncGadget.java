@@ -1,7 +1,10 @@
 package zkay;
 
 import circuit.auxiliary.LongElement;
+import circuit.eval.CircuitEvaluator;
+import circuit.eval.Instruction;
 import circuit.operations.Gadget;
+import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
 import circuit.structure.WireArray;
 import examples.gadgets.math.LongIntegerModGadget;
@@ -9,7 +12,7 @@ import examples.gadgets.math.LongIntegerModPowGadget;
 
 import java.math.BigInteger;
 
-import static zkay.crypto.PaillierBackend.*;
+import static zkay.crypto.PaillierBackend.CHUNK_SIZE;
 
 public class ZkayPaillierFastEncGadget extends Gadget {
 
@@ -21,9 +24,9 @@ public class ZkayPaillierFastEncGadget extends Gadget {
 	private final LongElement random;
 	private LongElement cipher;
 
-	public ZkayPaillierFastEncGadget(Wire[] plain, LongElement key, Wire[] random, int keyBits, String... desc) {
+	public ZkayPaillierFastEncGadget(TypedWire plain, LongElement key, Wire[] random, int keyBits, String... desc) {
 		this(key, keyBits,
-				new LongElement(new WireArray(plain).getBits(256)),
+				handleNegativePlaintexts(plain, key),
 				new LongElement(new WireArray(random).getBits(CHUNK_SIZE)), desc);
 	}
 
@@ -54,5 +57,35 @@ public class ZkayPaillierFastEncGadget extends Gadget {
 	@Override
 	public Wire[] getOutputWires() {
 		return cipher.getArray();
+	}
+
+	private static LongElement handleNegativePlaintexts(TypedWire input, LongElement key) {
+		if (input.type.signed) {
+			int bits = input.type.bitwidth;
+			CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();
+			WireArray inputBits = input.wire.getBitWires(bits);
+			Wire signBit = inputBits.get(bits - 1);
+			LongElement posValue = new LongElement(input.wire.getBitWires(bits));
+			Wire[] negValueWires = generator.createProverWitnessWireArray(key.getSize());
+			LongElement negValue = new LongElement(negValueWires, key.getCurrentBitwidth());
+
+			BigInteger maxValue = BigInteger.ONE.shiftLeft(bits);
+			generator.specifyProverWitnessComputation(new Instruction() {
+				@Override
+				public void evaluate(CircuitEvaluator evaluator) {
+					BigInteger inputValue = evaluator.getWireValue(input.wire);
+					BigInteger negInput = maxValue.subtract(inputValue);
+					BigInteger keyValue = evaluator.getWireValue(key, CHUNK_SIZE);
+					evaluator.setWireValue(negValue, keyValue.subtract(negInput), CHUNK_SIZE);
+				}
+			});
+			negValue.restrictBitwidth();
+			LongElement maxValueElement = new LongElement(generator.createConstantWire(maxValue).getBitWires(bits + 1));
+			key.add(posValue).assertEquality(negValue.add(maxValueElement)); // Ensure witness correctness
+
+			return posValue.muxBit(negValue, signBit);
+		} else {
+			return new LongElement(input.wire.getBitWires(input.type.bitwidth));
+		}
 	}
 }

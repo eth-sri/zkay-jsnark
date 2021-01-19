@@ -2,6 +2,7 @@ package zkay.crypto;
 
 import circuit.operations.Gadget;
 import circuit.structure.Wire;
+import zkay.TypedWire;
 import zkay.ZkayCBCSymmetricEncGadget;
 import zkay.ZkayCBCSymmetricEncGadget.CipherType;
 
@@ -22,7 +23,7 @@ public class ECDHBackend extends CryptoBackend.Symmetric {
 	}
 
 	@Override
-	public Gadget createEncryptionGadget(Wire[] plain, String key, Wire[] ivArr, String... desc) {
+	public Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] ivArr, String... desc) {
 		return new ZkayCBCSymmetricEncGadget(plain, getKey(key), extractIV(ivArr), cipherType, desc);
 	}
 }

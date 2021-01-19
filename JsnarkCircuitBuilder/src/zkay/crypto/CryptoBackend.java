@@ -5,10 +5,7 @@ import circuit.operations.Gadget;
 import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
 import circuit.structure.WireArray;
-import zkay.ZkayCBCSymmetricEncGadget;
-import zkay.ZkayECDHGadget;
-import zkay.ZkayEcPkDerivationGadget;
-import zkay.ZkayRSAEncryptionGadget;
+import zkay.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,7 +53,7 @@ public abstract class CryptoBackend {
 
 	public abstract int getKeyChunkSize();
 
-	public abstract Gadget createEncryptionGadget(Wire[] plain, String key, Wire[] random, String... desc);
+	public abstract Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] random, String... desc);
 
 	public abstract static class Symmetric extends CryptoBackend {
 

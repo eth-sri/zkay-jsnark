@@ -6,10 +6,7 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.junit.Assert;
 import org.junit.Test;
-import zkay.ChaskeyLTSEngine;
-import zkay.ChaskeyLtsCbc;
-import zkay.ZkayCBCSymmetricEncGadget;
-import zkay.ZkayUtil;
+import zkay.*;
 import zkay.crypto.CryptoBackend;
 
 import java.math.BigInteger;
@@ -86,7 +83,7 @@ public class ChaskeyLtsTest {
         CircuitGenerator cgen = new CircuitGenerator("cbcchaskey") {
             @Override
             protected void buildCircuit() {
-                Wire[] plainwire = {createConstantWire(plain)};
+                TypedWire plainwire = new TypedWire(createConstantWire(plain), ZkayType.ZkUint(256), "plaintext");
                 Wire ivwire = createConstantWire(iv);
                 Wire keywire = createConstantWire(key);
 

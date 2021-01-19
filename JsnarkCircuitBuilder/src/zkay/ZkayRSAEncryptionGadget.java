@@ -25,13 +25,13 @@ public class ZkayRSAEncryptionGadget extends Gadget {
 
     private final PaddingType paddingType;
     private final LongElement pk;
-    private final Wire[] plain;
+    private final Wire plain;
     private final Wire[] rnd;
     private final int keyBits;
 
     private Wire[] cipher = null;
 
-    public ZkayRSAEncryptionGadget(Wire[] plain, LongElement pk, Wire[] rnd, int keyBits, PaddingType paddingType, String... desc) {
+    public ZkayRSAEncryptionGadget(TypedWire plain, LongElement pk, Wire[] rnd, int keyBits, PaddingType paddingType, String... desc) {
         super(desc);
 
         Objects.requireNonNull(plain, "plain");
@@ -40,7 +40,7 @@ public class ZkayRSAEncryptionGadget extends Gadget {
         Objects.requireNonNull(paddingType, "paddingType");
 
         this.paddingType = paddingType;
-        this.plain = plain;
+        this.plain = plain.wire;
         this.pk = pk;
         this.rnd = rnd;
         this.keyBits = keyBits;
@@ -49,7 +49,7 @@ public class ZkayRSAEncryptionGadget extends Gadget {
     }
 
     protected void buildCircuit() {
-        Wire[] plainBytes = reverseBytes(new WireArray(plain).getBits(256), 8);
+        Wire[] plainBytes = reverseBytes(plain.getBitWires(256), 8);
 
         Gadget enc;
         switch (paddingType) {

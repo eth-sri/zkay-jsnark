@@ -18,16 +18,15 @@ import java.util.Objects;
 public class ZkayDummyHomEncryptionGadget extends Gadget {
 
 	private final Wire pk;
-	private final Wire[] plain;
+	private final TypedWire plain;
 	private final Wire[] cipher;
 
-	public ZkayDummyHomEncryptionGadget(Wire[] plain, Wire pk, Wire[] rnd, int keyBits, String... desc) {
+	public ZkayDummyHomEncryptionGadget(TypedWire plain, Wire pk, Wire[] rnd, int keyBits, String... desc) {
 		super(desc);
 
 		Objects.requireNonNull(plain, "plain");
 		Objects.requireNonNull(pk, "pk");
 		Objects.requireNonNull(rnd, "rnd");
-		if (plain.length > 1) throw new IllegalArgumentException("Plaintext wire array too long");
 		if (rnd.length > 1) throw new IllegalArgumentException("Randomness wire array too long");
 
 		this.plain = plain;
@@ -37,7 +36,17 @@ public class ZkayDummyHomEncryptionGadget extends Gadget {
 	}
 
 	protected void buildCircuit() {
-		cipher[0] = plain[0].mul(pk, "plain * pk").add(1);
+		if (plain.type.signed) {
+			int bits = plain.type.bitwidth;
+			Wire signBit = plain.wire.getBitWires(bits).get(bits - 1);
+			Wire negValue = plain.wire.invBits(bits).add(1).negate();
+
+			Wire cipherPos = plain.wire.mul(pk, "plain * pk");
+			Wire cipherNeg = negValue.mul(pk, "-plain * pk");
+			cipher[0] = signBit.mux(cipherNeg, cipherPos).add(1);
+		} else {
+			cipher[0] = plain.wire.mul(pk, "plain * pk").add(1);
+		}
 	}
 
 	@Override

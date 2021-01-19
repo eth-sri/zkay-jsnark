@@ -15,15 +15,15 @@ import static zkay.crypto.DummyBackend.CIPHER_CHUNK_SIZE;
 public class ZkayDummyEncryptionGadget extends Gadget {
 
     private final Wire pk;
-    private final Wire[] plain;
+    private final Wire plain;
     private final Wire[] cipher;
 
-    public ZkayDummyEncryptionGadget(Wire[] plain, LongElement pk, Wire[] rnd, int keyBits, String... desc) {
+    public ZkayDummyEncryptionGadget(TypedWire plain, LongElement pk, Wire[] rnd, int keyBits, String... desc) {
         super(desc);
         if (plain == null || pk == null || rnd == null) {
             throw new RuntimeException();
         }
-        this.plain = plain;
+        this.plain = plain.wire;
         Wire[] pkarr = pk.getBits().packBitsIntoWords(256);
         for (int i = 1; i < pkarr.length; ++i) {
             generator.addZeroAssertion(pkarr[i], "Dummy enc pk valid");
@@ -34,7 +34,7 @@ public class ZkayDummyEncryptionGadget extends Gadget {
     }
 
     protected void buildCircuit() {
-        Wire res = plain[0].add(pk, "plain + pk");
+        Wire res = plain.add(pk, "plain + pk");
         Arrays.fill(cipher, res);
     }
 

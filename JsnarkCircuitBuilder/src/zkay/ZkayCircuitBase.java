@@ -568,7 +568,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
 
         String desc = ADD_OP_LABELS ? String.format("enc%s(%s, %s, %s)", isDec ? "[dec]" : "",
                 getQualifiedName(plain), getQualifiedName(key), getQualifiedName(rnd)) : "";
-        Gadget enc = cryptoBackend.createEncryptionGadget(getArr(plain), getQualifiedName(key), getArr(rnd), desc);
+        Gadget enc = cryptoBackend.createEncryptionGadget(get(plain), getQualifiedName(key), getArr(rnd), desc);
         return enc.getOutputWires();
     }
 
@@ -578,7 +578,7 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         }
 
         String desc = ADD_OP_LABELS ? String.format("enc%s(%s, k, iv)", isDec ? "[dec]" : "", plain) : "";
-        Gadget enc = cryptoBackend.createEncryptionGadget(getArr(plain), getQualifiedName(otherPk), getArr(ivCipher), desc);
+        Gadget enc = cryptoBackend.createEncryptionGadget(get(plain), getQualifiedName(otherPk), getArr(ivCipher), desc);
         return enc.getOutputWires();
     }
 

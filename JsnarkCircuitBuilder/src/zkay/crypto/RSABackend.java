@@ -2,6 +2,7 @@ package zkay.crypto;
 
 import circuit.operations.Gadget;
 import circuit.structure.Wire;
+import zkay.TypedWire;
 import zkay.ZkayRSAEncryptionGadget;
 
 public class RSABackend extends CryptoBackend.Asymmetric {
@@ -24,7 +25,7 @@ public class RSABackend extends CryptoBackend.Asymmetric {
 	}
 
 	@Override
-	public Gadget createEncryptionGadget(Wire[] plain, String key, Wire[] random, String... desc) {
+	public Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] random, String... desc) {
 		return new ZkayRSAEncryptionGadget(plain, getKey(key), random, keyBits, paddingType, desc);
 	}
 }
