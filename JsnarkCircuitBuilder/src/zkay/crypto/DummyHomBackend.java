@@ -4,7 +4,6 @@ import circuit.auxiliary.LongElement;
 import circuit.operations.Gadget;
 import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
-import circuit.structure.WireArray;
 import zkay.HomomorphicInput;
 import zkay.TypedWire;
 import zkay.ZkayDummyHomEncryptionGadget;
@@ -100,18 +99,8 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 
 		// Transform input 0 to ciphertext 0 (= encryption of 0); serialized inputs x+1 to ciphertext x
 		Wire cipherWire = input.getCipher()[0].wire;
-		// Wire isNonZero = cipherWire.checkNonZero();
-		Wire isNonZero = orBits(cipherWire, 256); // TODO: Working around libsnark checkNonZero bug.
+		Wire isNonZero = cipherWire.checkNonZero();
 		return cipherWire.sub(isNonZero);
-	}
-
-	public static Wire orBits(Wire inWire, int numBits) {
-		WireArray bits = inWire.getBitWires(numBits);
-		Wire outWire = CircuitGenerator.getActiveCircuitGenerator().getZeroWire();
-		for (int i = 0; i < numBits; ++i) {
-			outWire = outWire.or(bits.get(i));
-		}
-		return outWire;
 	}
 
 	private static TypedWire[] typed(Wire wire, String name) {
