@@ -53,8 +53,11 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 	}
 
 	@Override
-	public Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] random, String... desc) {
-		return new ZkayPaillierFastEncGadget(plain, getKey(key), random, keyBits, desc);
+	public Gadget createEncryptionGadget(TypedWire plain, String keyName, Wire[] randomWires, String... desc) {
+		LongElement key = getKey(keyName);
+		LongElement encodedPlain = encodeSignedToModN(plain, key);
+		LongElement random = new LongElement(new WireArray(randomWires).getBits(CHUNK_SIZE).adjustLength(keyBits));
+		return new ZkayPaillierFastEncGadget(key, keyBits, encodedPlain, random, desc);
 	}
 
 	@Override
@@ -96,6 +99,7 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 				return toWireArray(result, outputName);
 			}
 			case '*': {
+				// Multiplication on additively homomorphic ciphertexts requires 1 ciphertext and 1 plaintext argument
 				LongElement cipherVal;
 				TypedWire plainWire;
 
@@ -120,7 +124,7 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 				} else {
 					// Signed. Enjoy doing this with a cryptographically secure key.
 					plainBits = keyBits;
-					plainVal = toModN(plainWire, n);
+					plainVal = encodeSignedToModN(plainWire, n);
 				}
 				String outputName = "(" + lhs.getName() + ") * (" + rhs.getName() + ")";
 
@@ -212,31 +216,34 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 		return val.add(oneIfAllZero);
 	}
 
-	private static LongElement toModN(TypedWire a, LongElement n) {
-		CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();
-		Wire[] resultWires = generator.createProverWitnessWireArray(n.getSize());
-		LongElement result = new LongElement(resultWires, n.getCurrentBitwidth());
+	private static LongElement encodeSignedToModN(TypedWire input, LongElement key) {
+		if (input.type.signed) {
+			int bits = input.type.bitwidth;
+			CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();
+			WireArray inputBits = input.wire.getBitWires(bits);
+			Wire signBit = inputBits.get(bits - 1);
+			LongElement posValue = new LongElement(input.wire.getBitWires(bits));
+			Wire[] negValueWires = generator.createProverWitnessWireArray(key.getSize());
+			LongElement negValue = new LongElement(negValueWires, key.getCurrentBitwidth());
 
-		generator.specifyProverWitnessComputation(new Instruction() {
-			@Override
-			public void evaluate(CircuitEvaluator evaluator) {
-				BigInteger aValue = evaluator.getWireValue(a.wire);
-				BigInteger nValue = evaluator.getWireValue(n, CHUNK_SIZE);
-				BigInteger signBit = BigInteger.ONE.shiftLeft(a.type.bitwidth - 1);
-
-				BigInteger modN;
-				if (aValue.and(signBit).signum() == 0) {
-					// Sign bit not set, positive
-					modN = aValue;
-				} else {
-					BigInteger aAbs = BigInteger.ONE.shiftLeft(a.type.bitwidth).subtract(aValue);
-					modN = nValue.subtract(aAbs);
+			BigInteger maxValue = BigInteger.ONE.shiftLeft(bits);
+			generator.specifyProverWitnessComputation(new Instruction() {
+				@Override
+				public void evaluate(CircuitEvaluator evaluator) {
+					BigInteger inputValue = evaluator.getWireValue(input.wire);
+					BigInteger negInput = maxValue.subtract(inputValue);
+					BigInteger keyValue = evaluator.getWireValue(key, CHUNK_SIZE);
+					evaluator.setWireValue(negValue, keyValue.subtract(negInput), CHUNK_SIZE);
 				}
+			});
+			negValue.restrictBitwidth();
+			LongElement maxValueElement = new LongElement(generator.createConstantWire(maxValue).getBitWires(bits + 1));
+			key.add(posValue).assertEquality(negValue.add(maxValueElement)); // Ensure witness correctness
 
-				evaluator.setWireValue(result, modN, CHUNK_SIZE);
-			}
-		});
-
-		return result;
+			return posValue.muxBit(negValue, signBit);
+		} else {
+			// Unsigned, encode as-is, just convert the input wire to a LongElement
+			return new LongElement(input.wire.getBitWires(input.type.bitwidth));
+		}
 	}
 }

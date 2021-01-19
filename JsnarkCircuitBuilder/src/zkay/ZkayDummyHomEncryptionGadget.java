@@ -18,10 +18,10 @@ import java.util.Objects;
 public class ZkayDummyHomEncryptionGadget extends Gadget {
 
 	private final Wire pk;
-	private final TypedWire plain;
+	private final Wire plain;
 	private final Wire[] cipher;
 
-	public ZkayDummyHomEncryptionGadget(TypedWire plain, Wire pk, Wire[] rnd, int keyBits, String... desc) {
+	public ZkayDummyHomEncryptionGadget(Wire plain, Wire pk, Wire[] rnd, int keyBits, String... desc) {
 		super(desc);
 
 		Objects.requireNonNull(plain, "plain");
@@ -36,17 +36,7 @@ public class ZkayDummyHomEncryptionGadget extends Gadget {
 	}
 
 	protected void buildCircuit() {
-		if (plain.type.signed) {
-			int bits = plain.type.bitwidth;
-			Wire signBit = plain.wire.getBitWires(bits).get(bits - 1);
-			Wire negValue = plain.wire.invBits(bits).add(1).negate();
-
-			Wire cipherPos = plain.wire.mul(pk, "plain * pk");
-			Wire cipherNeg = negValue.mul(pk, "-plain * pk");
-			cipher[0] = signBit.mux(cipherNeg, cipherPos).add(1);
-		} else {
-			cipher[0] = plain.wire.mul(pk, "plain * pk").add(1);
-		}
+		cipher[0] = plain.mul(pk, "plain * pk").add(1);
 	}
 
 	@Override

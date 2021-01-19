@@ -24,7 +24,8 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 
 	@Override
 	public Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] random, String... desc) {
-		return new ZkayDummyHomEncryptionGadget(plain, getKeyWire(key), random, keyBits, desc);
+		Wire encodedPlain = encodePlaintextIfSigned(plain);
+		return new ZkayDummyHomEncryptionGadget(encodedPlain, getKeyWire(key), random, keyBits, desc);
 	}
 
 	@Override
@@ -34,7 +35,7 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 		if (op == '-') {
 			// -Enc(msg, p) = -(msg * p) = (-msg) * p = Enc(-msg, p)
 			Wire minus = cipher.negate();
-			return typed(minus, "-(" + arg.getName() + ")");
+			return typedAsUint(minus, "-(" + arg.getName() + ")");
 		} else {
 			throw new UnsupportedOperationException("Unary operation " + op + " not supported");
 		}
@@ -48,33 +49,34 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 				Wire l = getCipherWire(lhs, "lhs");
 				Wire r = getCipherWire(rhs, "rhs");
 				Wire sum = l.add(r);
-				return typed(sum, "(" + lhs.getName() + ") + (" + rhs.getName() + ")");
+				return typedAsUint(sum, "(" + lhs.getName() + ") + (" + rhs.getName() + ")");
 			}
 			case '-': {
 				// Enc(m1, p) - Enc(m2, p) = (m1 * p) - (m2 * p) = (m1 - m2) * p = Enc(m1 - m2, p)
 				Wire l = getCipherWire(lhs, "lhs");
 				Wire r = getCipherWire(rhs, "rhs");
 				Wire diff = l.sub(r);
-				return typed(diff, "(" + lhs.getName() + ") - (" + rhs.getName() + ")");
+				return typedAsUint(diff, "(" + lhs.getName() + ") - (" + rhs.getName() + ")");
 			}
 			case '*': {
+				// Multiplication on additively homomorphic ciphertexts requires 1 ciphertext and 1 plaintext argument
 				Wire plain;
 				Wire cipher;
 				if (lhs == null) throw new IllegalArgumentException("lhs is null");
 				if (rhs == null) throw new IllegalArgumentException("rhs is null");
 				if (lhs.isPlain() && rhs.isCipher()) {
-					plain = lhs.getPlain().wire;
+					plain = encodePlaintextIfSigned(lhs.getPlain());
 					cipher = getCipherWire(rhs, "rhs");
 				} else if (lhs.isCipher() && rhs.isPlain()) {
 					cipher = getCipherWire(lhs, "lhs");
-					plain = rhs.getPlain().wire;
+					plain = encodePlaintextIfSigned(rhs.getPlain());
 				} else {
 					throw new IllegalArgumentException("DummyHom multiplication requires exactly 1 plaintext argument");
 				}
 
 				// Enc(m1, p) * m2 = (m1 * p) * m2 = (m1 * m2) * p = Enc(m1 * m2, p)
 				Wire prod = cipher.mul(plain);
-				return typed(prod, "(" + lhs.getName() + ") - (" + rhs.getName() + ")");
+				return typedAsUint(prod, "(" + lhs.getName() + ") - (" + rhs.getName() + ")");
 			}
 			default:
 				throw new UnsupportedOperationException("Binary operation " + op + " not supported");
@@ -103,7 +105,20 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 		return cipherWire.sub(isNonZero);
 	}
 
-	private static TypedWire[] typed(Wire wire, String name) {
+	private static Wire encodePlaintextIfSigned(TypedWire plain) {
+		if (plain.type.signed) {
+			// Signed: wrap negative values around the field prime instead of around 2^n
+			int bits = plain.type.bitwidth;
+			Wire signBit = plain.wire.getBitWires(bits).get(bits - 1);
+			Wire negValue = plain.wire.invBits(bits).add(1).negate();
+			return signBit.mux(negValue, plain.wire);
+		} else {
+			// Unsigned values get encoded as-is
+			return plain.wire;
+		}
+	}
+
+	private static TypedWire[] typedAsUint(Wire wire, String name) {
 		// Always type cipher wires as ZkUint(256)
 		return new TypedWire[] {new TypedWire(wire.add(1), ZkayType.ZkUint(256), name)};
 	}
