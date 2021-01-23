@@ -4,9 +4,7 @@
 package util;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
+import java.util.*;
 
 import circuit.structure.Wire;
 
@@ -15,11 +13,16 @@ public class Util {
 	// seeded by 1 for testing purposes
 	static Random rand = new Random(1);
 
-	public static BigInteger[] split(BigInteger x, int numchunks, int chunksize) {
-		BigInteger[] chunks = new BigInteger[numchunks];
-		BigInteger mask = new BigInteger("2").pow(chunksize).subtract(BigInteger.ONE);
-		for (int i = 0; i < numchunks; i++) {
-			chunks[i] = x.shiftRight(chunksize * i).and(mask);
+	public static BigInteger[] split(BigInteger x, int chunkSize) {
+		int numChunks = Math.max(1, (x.bitLength() + chunkSize - 1) / chunkSize); // ceil(x.bitLength() / chunkSize)
+		return split(x, numChunks, chunkSize);
+	}
+
+	public static BigInteger[] split(BigInteger x, int numChunks, int chunkSize) {
+		BigInteger[] chunks = new BigInteger[numChunks];
+		BigInteger mask = BigInteger.ONE.shiftLeft(chunkSize).subtract(BigInteger.ONE);
+		for (int i = 0; i < numChunks; i++) {
+			chunks[i] = x.shiftRight(chunkSize * i).and(mask);
 		}
 		return chunks;
 	}
@@ -30,7 +33,7 @@ public class Util {
 			if (table[blocks[i].getWireId()] == null) {
 				continue;
 			}
-			sum = sum.add(table[blocks[i].getWireId()].multiply(new BigInteger("2").pow(bitwidth * i)));
+			sum = sum.add(table[blocks[i].getWireId()].shiftLeft(bitwidth * i));
 		}
 		return sum;
 	}
@@ -69,21 +72,20 @@ public class Util {
 
 	public static int[] concat(int[][] arrays) {
 		int sum = 0;
-		for (int i = 0; i < arrays.length; i++) {
-			sum += arrays[i].length;
+		for (int[] array : arrays) {
+			sum += array.length;
 		}
 		int[] all = new int[sum];
 		int idx = 0;
-		for (int i = 0; i < arrays.length; i++) {
-			for (int j = 0; j < arrays[i].length; j++) {
-				all[idx++] = arrays[i][j];
+		for (int[] array : arrays) {
+			for (int a : array) {
+				all[idx++] = a;
 			}
 		}
 		return all;
 	}
 
 	public static BigInteger[] randomBigIntegerArray(int num, BigInteger n) {
-
 		BigInteger[] result = new BigInteger[num];
 		for (int i = 0; i < num; i++) {
 			result[i] = nextRandomBigInteger(n);
@@ -92,7 +94,6 @@ public class Util {
 	}
 
 	public static BigInteger nextRandomBigInteger(BigInteger n) {
-
 		BigInteger result = new BigInteger(n.bitLength(), rand);
 		while (result.compareTo(n) >= 0) {
 			result = new BigInteger(n.bitLength(), rand);
@@ -101,7 +102,6 @@ public class Util {
 	}
 
 	public static BigInteger[] randomBigIntegerArray(int num, int numBits) {
-
 		BigInteger[] result = new BigInteger[num];
 		for (int i = 0; i < num; i++) {
 			result[i] = nextRandomBigInteger(numBits);
@@ -110,9 +110,7 @@ public class Util {
 	}
 
 	public static BigInteger nextRandomBigInteger(int numBits) {
-
-		BigInteger result = new BigInteger(numBits, rand);
-		return result;
+		return new BigInteger(numBits, rand);
 	}
 
 	public static String getDesc(String... desc) {
@@ -121,12 +119,10 @@ public class Util {
 		} else {
 			return desc[0];
 		}
-
 	}
 
-	public static ArrayList<Integer> parseSequenceLists(String s) {
-
-		ArrayList<Integer> list = new ArrayList<Integer>();
+	public static List<Integer> parseSequenceLists(String s) {
+		List<Integer> list = new ArrayList<>();
 		String[] chunks = s.split(",");
 		for (String chunk : chunks) {
 			if (chunk.equals(""))
@@ -157,7 +153,7 @@ public class Util {
 	public static String arrayToString(int[] a, String separator) {
 		StringBuilder s = new StringBuilder();
 		for (int i = 0; i < a.length - 1; i++) {
-			s.append(a[i] + separator);
+			s.append(a[i]).append(separator);
 		}
 		s.append(a[a.length - 1]);
 		return s.toString();
@@ -166,7 +162,7 @@ public class Util {
 	public static String arrayToString(Wire[] a, String separator) {
 		StringBuilder s = new StringBuilder();
 		for (int i = 0; i < a.length - 1; i++) {
-			s.append(a[i] + separator);
+			s.append(a[i]).append(separator);
 		}
 		s.append(a[a.length - 1]);
 		return s.toString();
@@ -180,27 +176,17 @@ public class Util {
 		return String.format("%" + l + "s",s).replace(' ', '0');
 	}
 
-	public static BigInteger computeMaxValue(int numBits){
-		return BigIntStorage.getInstance().getBigInteger(
-				new BigInteger("2").pow(numBits).subtract(
-						BigInteger.ONE));
+	// Computation is cheap, keeping lots of BigIntegers in memory likely isn't, so use a weak hash map
+	private static final Map<Integer, BigInteger> maxValueCache = Collections.synchronizedMap(new WeakHashMap<>());
+	public static BigInteger computeMaxValue(int numBits) {
+		return maxValueCache.computeIfAbsent(numBits, i -> BigInteger.ONE.shiftLeft(i).subtract(BigInteger.ONE));
 	}
-	
-	public static BigInteger computeBound(int numBits){
-		return BigIntStorage.getInstance().getBigInteger(
-				new BigInteger("2").pow(numBits));
+
+	private static final Map<Integer, BigInteger> boundCache = Collections.synchronizedMap(new WeakHashMap<>());
+	public static BigInteger computeBound(int numBits) {
+		return boundCache.computeIfAbsent(numBits, i -> BigInteger.ONE.shiftLeft(numBits));
 	}
-	
-	public static BigInteger[] split(BigInteger x, int chunksize) {
-		int numChunks = Math.max(1, (int)Math.ceil(x.bitLength()*1.0/chunksize));
-		BigInteger[] chunks = new BigInteger[numChunks];
-		BigInteger mask = new BigInteger("2").pow(chunksize).subtract(BigInteger.ONE);
-		for (int i = 0; i < numChunks; i++) {
-			chunks[i] = x.shiftRight(chunksize * i).and(mask);
-		}
-		return chunks;
-	}
-	
+
 	public static Wire[] padWireArray(Wire[] a, int length, Wire p) {
 		if (a.length == length) {
 			return a;
