@@ -5,8 +5,12 @@
  *******************************************************************************/
 package zkay;
 
+import circuit.auxiliary.LongElement;
+import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
 import circuit.structure.WireArray;
+import examples.gadgets.math.LongIntegerFloorDivGadget;
+import examples.gadgets.math.LongIntegerModGadget;
 
 import static zkay.ZkayCircuitBase.negate;
 import static zkay.ZkayType.*;
@@ -74,9 +78,70 @@ public class TypedWire {
         }
     }
 
-    /*protected Wire div(Wire lhs, Wire rhs) {
-        // TODO, Would need to use prover witness computation and then prove that division result is valid
-    }*/
+    public TypedWire divideBy(TypedWire rhs) {
+        ZkayType resultType = checkType(this.type, rhs.type);
+        String op = this.name + " / " + rhs.name;
+        CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();
+        generator.addOneAssertion(rhs.wire.checkNonZero(), "no div by 0");
+
+        // Sign handling...
+        Wire resultSign = generator.getZeroWire();
+        Wire lhsWire = this.wire;
+        Wire rhsWire = rhs.wire;
+
+        if (this.type.signed) {
+            Wire lhsSign = lhsWire.getBitWires(this.type.bitwidth).get(this.type.bitwidth - 1);
+            lhsWire = lhsSign.mux(negate(this).wire, lhsWire);
+            resultSign = resultSign.xorBitwise(lhsSign, 1);
+        }
+        if (rhs.type.signed) {
+            Wire rhsSign = rhsWire.getBitWires(rhs.type.bitwidth).get(rhs.type.bitwidth - 1);
+            rhsWire = rhsSign.mux(negate(rhs).wire, rhsWire);
+            resultSign = resultSign.xorBitwise(rhsSign, 1);
+        }
+
+        // Need to operate on long integers, regular div / mod gadget only works for <= 126 bits
+        LongElement lhsLong = new LongElement(lhsWire.getBitWires(this.type.bitwidth));
+        LongElement rhsLong = new LongElement(rhsWire.getBitWires(rhs.type.bitwidth));
+        LongElement q = new LongIntegerFloorDivGadget(lhsLong, rhsLong, op).getQuotient();
+        Wire resAbs = q.getBits(resultType.bitwidth).packBitsIntoWords(resultType.bitwidth)[0];
+
+        TypedWire resPos = new TypedWire(resAbs, resultType, op);
+        TypedWire resNeg = negate(resPos);
+        return new TypedWire(resultSign.mux(resNeg.wire, resPos.wire), resultType, op);
+    }
+
+    public TypedWire modulo(TypedWire rhs) {
+        ZkayType resultType = checkType(this.type, rhs.type);
+        String op = this.name + " % " + rhs.name;
+        CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();
+        generator.addOneAssertion(rhs.wire.checkNonZero(), "no div by 0");
+
+        // Sign handling...
+        Wire resultSign = generator.getZeroWire();
+        Wire lhsWire = this.wire;
+        Wire rhsWire = rhs.wire;
+
+        if (this.type.signed) {
+            Wire lhsSign = lhsWire.getBitWires(this.type.bitwidth).get(this.type.bitwidth - 1);
+            lhsWire = lhsSign.mux(negate(this).wire, lhsWire);
+            resultSign = lhsSign;
+        }
+        if (rhs.type.signed) {
+            Wire rhsSign = rhsWire.getBitWires(rhs.type.bitwidth).get(rhs.type.bitwidth - 1);
+            rhsWire = rhsSign.mux(negate(rhs).wire, rhsWire);
+        }
+
+        // Need to operate on long integers, regular div / mod gadget only works for <= 126 bits
+        LongElement lhsLong = new LongElement(lhsWire.getBitWires(this.type.bitwidth));
+        LongElement rhsLong = new LongElement(rhsWire.getBitWires(rhs.type.bitwidth));
+        LongElement r = new LongIntegerModGadget(lhsLong, rhsLong, true, op).getRemainder();
+        Wire resAbs = r.getBits(resultType.bitwidth).packBitsIntoWords(resultType.bitwidth)[0];
+
+        TypedWire resPos = new TypedWire(resAbs, resultType, op);
+        TypedWire resNeg = negate(resPos);
+        return new TypedWire(resultSign.mux(resNeg.wire, resPos.wire), resultType, op);
+    }
 
     /** BIT OPS */
 

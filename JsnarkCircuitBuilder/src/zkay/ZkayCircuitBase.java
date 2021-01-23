@@ -328,6 +328,10 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
                 return lhs.minus(rhs);
             case '*':
                 return lhs.times(rhs);
+            case '/':
+                return lhs.divideBy(rhs);
+            case '%':
+                return lhs.modulo(rhs);
             case '|':
                 return lhs.bitOr(rhs);
             case '&':
