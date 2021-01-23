@@ -21,9 +21,8 @@ import circuit.structure.WireArray;
  * ones used in RSA operations. It applies some of the long integer
  * optimizations from xjsnark (to appear). This is a preliminary version. More
  * Other features and detailed tests will be added in the future.
- * 
- * Usage examples exist in the RSA examples gadgets.
  *
+ * Usage examples exist in the RSA examples gadgets.
  */
 
 public class LongElement {
@@ -108,18 +107,6 @@ public class LongElement {
 		}
 	}
 
-	// public LongElement(Wire[] w, int currentBitwidth) {
-	// array = w;
-	// this.currentBitwidth = new int[w.length];
-	// Arrays.fill(this.currentBitwidth, currentBitwidth);
-	// ;
-	// this.currentMaxValues = new BigInteger[w.length];
-	// for (int i = 0; i < w.length; i++) {
-	// currentMaxValues[i] = Util.computeMaxValue(this.currentBitwidth[i]);
-	// }
-	// generator = CircuitGenerator.getActiveCircuitGenerator();
-	// }
-
 	/**
 	 * A long element representing a constant.
 	 */
@@ -180,8 +167,17 @@ public class LongElement {
 		return overflow;
 	}
 
-	public LongElement add(LongElement o) {
+	public LongElement add(long value) {
+		return add(BigInteger.valueOf(value));
+	}
 
+	public LongElement add(BigInteger value) {
+		if (value.signum() == 0) return this;
+		if (value.signum() < 0) return subtract(value.negate());
+		return add(new LongElement(Util.split(value, CHUNK_BITWIDTH)));
+	}
+
+	public LongElement add(LongElement o) {
 		if (addOverflowCheck(o)) {
 			System.err.println("Warning: Addition overflow could happen");
 		}
@@ -193,19 +189,51 @@ public class LongElement {
 		BigInteger[] newMaxValues = new BigInteger[length];
 		for (int i = 0; i < length; i++) {
 			result[i] = w1[i].add(w2[i]);
-			BigInteger max1 = i < array.length ? currentMaxValues[i]
-					: BigInteger.ZERO;
-			BigInteger max2 = i < o.array.length ? o.currentMaxValues[i]
-					: BigInteger.ZERO;
+			BigInteger max1 = i < array.length ? currentMaxValues[i] : BigInteger.ZERO;
+			BigInteger max2 = i < o.array.length ? o.currentMaxValues[i] : BigInteger.ZERO;
 
 			newMaxValues[i] = max1.add(max2);
 		}
 		return new LongElement(result, newMaxValues);
 	}
 
+	public LongElement subtract(long value) {
+		return subtract(BigInteger.valueOf(value));
+	}
+
+	public LongElement subtract(BigInteger value) {
+		if (value.signum() == 0) return this;
+		if (value.signum() < 0) return add(value.negate());
+		return subtract(new LongElement(Util.split(value, CHUNK_BITWIDTH)));
+	}
+
+	public LongElement subtract(LongElement other) {
+		if (!isAligned() || !other.isAligned()) {
+			throw new IllegalArgumentException("Subtraction arguments must be properly aligned");
+		}
+
+		LongElement result = generator.createLongElementProverWitness(getMaxVal(CHUNK_BITWIDTH).bitLength());
+
+		generator.specifyProverWitnessComputation(new Instruction() {
+			@Override
+			public void evaluate(CircuitEvaluator evaluator) {
+				BigInteger myValue = evaluator.getWireValue(LongElement.this, CHUNK_BITWIDTH);
+				BigInteger otherValue = evaluator.getWireValue(other, CHUNK_BITWIDTH);
+				BigInteger resultValue = myValue.subtract(otherValue);
+				if (resultValue.signum() < 0) {
+					throw new IllegalArgumentException("Result of subtraction is negative!");
+				}
+				evaluator.setWireValue(result, resultValue, CHUNK_BITWIDTH);
+			}
+		});
+
+		result.restrictBitwidth();
+		assertEquality(result.add(other));
+		return result;
+	}
+
 	/**
 	 * Implements the improved long integer multiplication from xjsnark
-	 * 
 	 */
 
 	public LongElement mul(LongElement o) {
@@ -250,12 +278,8 @@ public class LongElement {
 				}
 			});
 
-			Wire zeroWire = generator.getZeroWire();
 			for (int k = 0; k < length; k++) {
 				BigInteger constant = new BigInteger((k + 1) + "");
-				Wire v1 = zeroWire;
-				Wire v2 = zeroWire;
-				Wire v3 = zeroWire;
 				BigInteger coeff = BigInteger.ONE;
 
 				Wire[] vector1 = new Wire[array.length];
@@ -272,19 +296,9 @@ public class LongElement {
 					coeff = Util.mod(coeff.multiply(constant), Config.FIELD_PRIME);
 				}
 
-				// for(int i = array.length-1; i>=0; i--){
-				// v1 = v1.mul(constant).add(array[i]);
-				// }
-				// for(int i = o.array.length-1; i>=0; i--){
-				// v2 = v2.mul(constant).add(o.array[i]);
-				// }
-				// for(int i = length-1; i>=0; i--){
-				// v3 = v3.mul(constant).add(result[i]);
-				// }
-
-				v1 = new WireArray(vector1).sumAllElements();
-				v2 = new WireArray(vector2).sumAllElements();
-				v3 = new WireArray(vector3).sumAllElements();
+				Wire v1 = new WireArray(vector1).sumAllElements();
+				Wire v2 = new WireArray(vector2).sumAllElements();
+				Wire v3 = new WireArray(vector3).sumAllElements();
 				generator.addAssertion(v1, v2, v3);
 			}
 		}
@@ -314,9 +328,8 @@ public class LongElement {
 	public int getSize() {
 		return array.length;
 	}
-	
+
 	public LongElement align(int totalNumChunks) {
-		
 		Wire[] newArray = Arrays.copyOfRange(array, 0, totalNumChunks);
 		for(int i = 0; i < newArray.length; i++){
 			if(newArray[i] == null){
@@ -327,7 +340,7 @@ public class LongElement {
 		Arrays.fill(newMaxValues, BigInteger.ZERO);
 		System.arraycopy(currentMaxValues, 0, newMaxValues, 0, Math.min(totalNumChunks, currentMaxValues.length));
 		BigInteger maxAlignedChunkValue = Util.computeMaxValue(CHUNK_BITWIDTH);
-		
+
 		for (int i = 0; i < totalNumChunks; i++) {
 			if (newMaxValues[i].bitLength() > CHUNK_BITWIDTH) {
 				Wire[] chunkBits = newArray[i].getBitWires(newMaxValues[i].bitLength())
@@ -425,7 +438,7 @@ public class LongElement {
 				WireArray out = new WireArray(bitWires);
 				if(limit >= maxVal.bitLength()){
 					bits = out.adjustLength(maxVal.bitLength());
-				} 
+				}
 				return out;
 			}
 
@@ -860,7 +873,7 @@ public class LongElement {
 			helperBits2[i] = helperBits2[i - 1].add(helperBits[i - 1]);
 //			generator.addZeroAssertion(helperBits2[i].mul(paddedA1[i]
 //					.sub(paddedA2[i])));
-			generator.addAssertion(helperBits2[i], paddedA1[i].sub(paddedA2[i]), generator.getZeroWire());	
+			generator.addAssertion(helperBits2[i], paddedA1[i].sub(paddedA2[i]), generator.getZeroWire());
 		}
 
 		// no checks needed for the less significant chunks

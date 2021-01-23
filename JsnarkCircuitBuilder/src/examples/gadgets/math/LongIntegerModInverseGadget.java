@@ -58,7 +58,7 @@ public class LongIntegerModInverseGadget extends Gadget {
 		// a * a^(-1) = 1   (mod m)
 		// <=> Exist q:  a * a^(-1) = q * m + 1
 		LongElement product = a.mul(inverse);
-		LongElement oneModM = quotient.mul(m).add(new LongElement(new BigInteger[] {BigInteger.ONE}));
+		LongElement oneModM = quotient.mul(m).add(1);
 		product.assertEquality(oneModM);
 
 		if (restrictRange) {

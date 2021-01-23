@@ -1,17 +1,12 @@
 package zkay;
 
 import circuit.auxiliary.LongElement;
-import circuit.eval.CircuitEvaluator;
-import circuit.eval.Instruction;
 import circuit.operations.Gadget;
 import circuit.structure.Wire;
 import examples.gadgets.math.LongIntegerFloorDivGadget;
 import examples.gadgets.math.LongIntegerModGadget;
 import examples.gadgets.math.LongIntegerModInverseGadget;
 import examples.gadgets.math.LongIntegerModPowGadget;
-import util.Util;
-
-import java.math.BigInteger;
 
 public class ZkayPaillierFastDecGadget extends Gadget {
 
@@ -40,28 +35,9 @@ public class ZkayPaillierFastDecGadget extends Gadget {
 
 		// plain = L(cipher^lambda mod n^2) / lambda mod n
 		LongElement cPowLambda = new LongIntegerModPowGadget(cipher, lambda, nSquare, nSquareMinBits, "c^lambda").getResult();
-		LongElement minusOne = subtractOneFrom(cPowLambda);
-		LongElement divByN = new LongIntegerFloorDivGadget(minusOne, n, "(c^lambda - 1) / n").getQuotient();
-		LongElement timesLambdaInverse = divByN.mul(lambdaInverse);
+		LongElement lOutput = new LongIntegerFloorDivGadget(cPowLambda.subtract(1), n, "(c^lambda - 1) / n").getQuotient();
+		LongElement timesLambdaInverse = lOutput.mul(lambdaInverse);
 		plain = new LongIntegerModGadget(timesLambdaInverse, n, nBits, true).getRemainder();
-	}
-
-	private LongElement subtractOneFrom(LongElement value) {
-		Wire[] minusOneWires = generator.createProverWitnessWireArray(value.getSize());
-		LongElement minusOne = new LongElement(minusOneWires, value.getCurrentBitwidth());
-
-		generator.specifyProverWitnessComputation(new Instruction() {
-			@Override
-			public void evaluate(CircuitEvaluator evaluator) {
-				BigInteger origValue = evaluator.getWireValue(value, LongElement.CHUNK_BITWIDTH);
-				BigInteger minusOneValue = origValue.subtract(BigInteger.ONE);
-				evaluator.setWireValue(minusOneWires, Util.split(minusOneValue, LongElement.CHUNK_BITWIDTH));
-			}
-		});
-
-		minusOne.restrictBitwidth();
-		minusOne.add(new LongElement(new BigInteger[] {BigInteger.ONE})).assertEquality(value);
-		return minusOne;
 	}
 
 	public LongElement getPlaintext() {

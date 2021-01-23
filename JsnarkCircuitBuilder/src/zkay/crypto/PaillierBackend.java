@@ -1,10 +1,7 @@
 package zkay.crypto;
 
 import circuit.auxiliary.LongElement;
-import circuit.eval.CircuitEvaluator;
-import circuit.eval.Instruction;
 import circuit.operations.Gadget;
-import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
 import circuit.structure.WireArray;
 import examples.gadgets.math.LongIntegerModGadget;
@@ -15,7 +12,6 @@ import zkay.TypedWire;
 import zkay.ZkayPaillierFastEncGadget;
 import zkay.ZkayType;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 
 public class PaillierBackend extends CryptoBackend.Asymmetric implements HomomorphicBackend {
@@ -218,27 +214,14 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 
 	private static LongElement encodeSignedToModN(TypedWire input, LongElement key) {
 		if (input.type.signed) {
+			// Signed. Encode positive values as-is, negative values (-v) as (key - v)
 			int bits = input.type.bitwidth;
-			CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();
 			WireArray inputBits = input.wire.getBitWires(bits);
 			Wire signBit = inputBits.get(bits - 1);
-			LongElement posValue = new LongElement(input.wire.getBitWires(bits));
-			Wire[] negValueWires = generator.createProverWitnessWireArray(key.getSize());
-			LongElement negValue = new LongElement(negValueWires, key.getCurrentBitwidth());
 
-			BigInteger maxValue = BigInteger.ONE.shiftLeft(bits);
-			generator.specifyProverWitnessComputation(new Instruction() {
-				@Override
-				public void evaluate(CircuitEvaluator evaluator) {
-					BigInteger inputValue = evaluator.getWireValue(input.wire);
-					BigInteger negInput = maxValue.subtract(inputValue);
-					BigInteger keyValue = evaluator.getWireValue(key, CHUNK_SIZE);
-					evaluator.setWireValue(negValue, keyValue.subtract(negInput), CHUNK_SIZE);
-				}
-			});
-			negValue.restrictBitwidth();
-			LongElement maxValueElement = new LongElement(generator.createConstantWire(maxValue).getBitWires(bits + 1));
-			key.add(posValue).assertEquality(negValue.add(maxValueElement)); // Ensure witness correctness
+			LongElement posValue = new LongElement(inputBits);
+			LongElement rawNegValue = new LongElement(input.wire.invBits(bits).add(1).getBitWires(bits));
+			LongElement negValue = key.subtract(rawNegValue);
 
 			return posValue.muxBit(negValue, signBit);
 		} else {

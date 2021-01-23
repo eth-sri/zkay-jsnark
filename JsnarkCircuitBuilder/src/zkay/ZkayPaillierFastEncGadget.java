@@ -6,8 +6,6 @@ import circuit.structure.Wire;
 import examples.gadgets.math.LongIntegerModGadget;
 import examples.gadgets.math.LongIntegerModPowGadget;
 
-import java.math.BigInteger;
-
 public class ZkayPaillierFastEncGadget extends Gadget {
 
 	private final LongElement n;
@@ -32,7 +30,7 @@ public class ZkayPaillierFastEncGadget extends Gadget {
 
 	private void buildCircuit() {
 		int nSquareMinBits = 2 * nBits - 1; // Minimum bit length of n^2
-		LongElement gPowPlain = n.mul(plain).add(new LongElement(new BigInteger[] {BigInteger.ONE})).align(nSquare.getSize());
+		LongElement gPowPlain = n.mul(plain).add(1).align(nSquare.getSize());
 		LongElement randPowN = new LongIntegerModPowGadget(random, n, nBits, nSquare, nSquareMinBits, "r^n").getResult();
 		LongElement product = gPowPlain.mul(randPowN);
 		cipher = new LongIntegerModGadget(product, nSquare, nSquareMinBits, true, "g^m * r^n mod n^2").getRemainder();
