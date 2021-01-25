@@ -74,7 +74,6 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 
 	@Override
 	public TypedWire[] doHomomorphicOp(HomomorphicInput lhs, char op, HomomorphicInput rhs, String keyName) {
-		LongElement n = getKey(keyName);
 		LongElement nSquare = getNSquare(keyName);
 
 		switch (op) {
@@ -111,21 +110,32 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 					throw new IllegalArgumentException("Paillier multiplication requires exactly 1 plaintext argument");
 				}
 
-				int plainBits;
-				LongElement plainVal;
+				int plainBits = plainWire.type.bitwidth;
+				WireArray plainBitWires = plainWire.wire.getBitWires(plainBits);
+				LongElement absPlainVal;
 				if (!plainWire.type.signed) {
-					// Unsigned, easy case
-					plainBits = plainWire.type.bitwidth;
-					plainVal = new LongElement(plainWire.wire, plainBits);
+					// Unsigned, easy case, just do the multiplication.
+					absPlainVal = new LongElement(plainBitWires);
 				} else {
-					// Signed. Enjoy doing this with a cryptographically secure key.
-					plainBits = keyBits;
-					plainVal = encodeSignedToModN(plainWire, n);
+					// Signed. Multiply by the absolute value, later negate result if sign bit was set.
+					Wire twosComplement = plainWire.wire.invBits(plainBits).add(1);
+					LongElement posValue = new LongElement(plainBitWires);
+					LongElement negValue = new LongElement(twosComplement.getBitWires(plainBits));
+					Wire signBit = plainBitWires.get(plainBits - 1);
+					absPlainVal = posValue.muxBit(negValue, signBit);
 				}
 				String outputName = "(" + lhs.getName() + ") * (" + rhs.getName() + ")";
 
 				// Enc(m1, r1) ^ m2 = (g^m1 * r1^n) ^ m2 = (g^m1)^m2 * (r1^n)^m2 = g^(m1*m2) * (r1^m2)^n = Enc(m1 * m2, r1 ^ m2)
-				LongElement result = modPow(cipherVal, plainVal, plainBits, nSquare);
+				LongElement result = modPow(cipherVal, absPlainVal, plainBits, nSquare);
+
+				if (plainWire.type.signed) {
+					// Correct for sign
+					Wire signBit = plainBitWires.get(plainBits - 1);
+					LongElement negResult = invert(result, nSquare);
+					result = result.muxBit(negResult, signBit);
+				}
+
 				return toWireArray(result, outputName);
 			}
 			default:
@@ -140,7 +150,7 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 		return n.mul(n).align(maxNumChunks);
 	}
 
-	private LongElement invert(LongElement val, LongElement nSquare) {
+	private static LongElement invert(LongElement val, LongElement nSquare) {
 		return new LongIntegerModInverseGadget(val, nSquare, true, "Paillier negation").getResult();
 	}
 
