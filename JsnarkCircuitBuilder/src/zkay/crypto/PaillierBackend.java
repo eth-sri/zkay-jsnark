@@ -212,13 +212,8 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 	private static LongElement uninitToZero(LongElement val) {
 		// Uninitialized values have a ciphertext of all zeros, which is not a valid Paillier cipher.
 		// Instead, replace those values with 1 == g^0 * 0^n = Enc(0, 0)
-		Wire[] valWires = val.getArray();
-		Wire[] wireNonZero = new Wire[valWires.length];
-		for (int i = 0; i < valWires.length; ++i) {
-			wireNonZero[i] = valWires[i].checkNonZero();
-		}
-		Wire allWiresZero = new WireArray(wireNonZero).sumAllElements().checkNonZero().invAsBit();
-		LongElement oneIfAllZero = new LongElement(allWiresZero, 1 /* bit */);
+		Wire valIsZero = val.checkNonZero().invAsBit();
+		LongElement oneIfAllZero = new LongElement(valIsZero, 1 /* bit */);
 		return val.add(oneIfAllZero);
 	}
 

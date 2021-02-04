@@ -490,6 +490,14 @@ public class LongElement {
 		return new LongElement(newArray, newMaxValues);
 	}
 
+	public Wire checkNonZero() {
+		Wire[] wireNonZero = new Wire[array.length];
+		for (int i = 0; i < array.length; ++i) {
+			wireNonZero[i] = array[i].checkNonZero();
+		}
+		return new WireArray(wireNonZero).sumAllElements().checkNonZero();
+	}
+
 	public Wire[] getArray() {
 		return array;
 	}

@@ -4,6 +4,7 @@ import circuit.auxiliary.LongElement;
 import circuit.operations.Gadget;
 import circuit.structure.Wire;
 import examples.gadgets.math.LongIntegerModGadget;
+import examples.gadgets.math.LongIntegerModInverseGadget;
 import examples.gadgets.math.LongIntegerModPowGadget;
 
 public class ZkayPaillierFastEncGadget extends Gadget {
@@ -30,6 +31,10 @@ public class ZkayPaillierFastEncGadget extends Gadget {
 
 	private void buildCircuit() {
 		int nSquareMinBits = 2 * nBits - 1; // Minimum bit length of n^2
+		// Prove that random is in Z_n* by checking that random has an inverse mod n
+		LongElement randInv = new LongIntegerModInverseGadget(random, n, false).getResult();
+		generator.addOneAssertion(randInv.checkNonZero());
+		// Compute c = g^m * r^n mod n^2
 		LongElement gPowPlain = n.mul(plain).add(1).align(nSquare.getSize());
 		LongElement randPowN = new LongIntegerModPowGadget(random, n, nBits, nSquare, nSquareMinBits, "r^n").getResult();
 		LongElement product = gPowPlain.mul(randPowN);
