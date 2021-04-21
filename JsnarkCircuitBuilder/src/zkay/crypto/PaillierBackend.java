@@ -52,7 +52,8 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 	public Gadget createEncryptionGadget(TypedWire plain, String keyName, Wire[] randomWires, String... desc) {
 		LongElement key = getKey(keyName);
 		LongElement encodedPlain = encodeSignedToModN(plain, key);
-		LongElement random = new LongElement(new WireArray(randomWires).getBits(CHUNK_SIZE).adjustLength(keyBits));
+		LongElement randArr = new LongElement(new WireArray(randomWires).getBits(CHUNK_SIZE).adjustLength(keyBits));
+		LongElement random = uninitZeroToOne(randArr); // Also replace randomness 0 with 1 (for uninit ciphers)
 		return new ZkayPaillierFastEncGadget(key, keyBits, encodedPlain, random, desc);
 	}
 
@@ -187,7 +188,7 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 		bitWidths[bitWidths.length - 1] = 2 * keyBits - (bitWidths.length - 1) * CHUNK_SIZE;
 
 		// Cipher could still be uninitialized-zero, which we need to fix
-		return uninitToZero(new LongElement(wires, bitWidths));
+		return uninitZeroToOne(new LongElement(wires, bitWidths));
 	}
 
 	private TypedWire[] toWireArray(LongElement value, String name) {
@@ -209,9 +210,9 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 		return typedWires;
 	}
 
-	private static LongElement uninitToZero(LongElement val) {
+	private static LongElement uninitZeroToOne(LongElement val) {
 		// Uninitialized values have a ciphertext of all zeros, which is not a valid Paillier cipher.
-		// Instead, replace those values with 1 == g^0 * 0^n = Enc(0, 0)
+		// Instead, replace those values with 1 == g^0 * 1^n = Enc(0, 1)
 		Wire valIsZero = val.checkNonZero().invAsBit();
 		LongElement oneIfAllZero = new LongElement(valIsZero, 1 /* bit */);
 		return val.add(oneIfAllZero);
