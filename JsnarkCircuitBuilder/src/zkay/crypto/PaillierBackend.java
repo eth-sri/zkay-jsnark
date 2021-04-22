@@ -226,7 +226,7 @@ public class PaillierBackend extends CryptoBackend.Asymmetric implements Homomor
 			Wire signBit = inputBits.get(bits - 1);
 
 			LongElement posValue = new LongElement(inputBits);
-			LongElement rawNegValue = new LongElement(input.wire.invBits(bits).add(1).getBitWires(bits));
+			LongElement rawNegValue = new LongElement(input.wire.invBits(bits).add(1).getBitWires(bits + 1));
 			LongElement negValue = key.subtract(rawNegValue);
 
 			return posValue.muxBit(negValue, signBit);
