@@ -24,32 +24,32 @@ public class BabyJubJubTest {
             generator.addEqualityAssertion(ainv, ainv_expected);
 
             // check generator on curve
-            Wire g_x = generator.createConstantWire(GENERATOR_U);
-            Wire g_y = generator.createConstantWire(GENERATOR_V);
+            Wire g_x = generator.createConstantWire(GENERATOR_X);
+            Wire g_y = generator.createConstantWire(GENERATOR_Y);
             assertOnCurve(g_x, g_y);
 
             // check generator + generator on curve
-            AffinePoint g = new AffinePoint(g_x, g_y);
-            AffinePoint g2 = addPoints(g, g);
+            JubJubPoint g = getGenerator();
+            JubJubPoint g2 = addPoints(g, g);
             assertOnCurve(g2.x, g2.y);
 
             // check generator - generator = INFINITY
-            AffinePoint gneg = negatePoint(g);
+            JubJubPoint gneg = negatePoint(g);
             assertOnCurve(gneg.x, gneg.y);
-            AffinePoint inf = addPoints(g, gneg);
+            JubJubPoint inf = addPoints(g, gneg);
             generator.addEqualityAssertion(inf.x, generator.getZeroWire());
             generator.addEqualityAssertion(inf.y, generator.getOneWire());
 
             // check generator + INFINITY = generator
-            AffinePoint g_expected = addPoints(g, getInfinity());
+            JubJubPoint g_expected = addPoints(g, getInfinity());
             generator.addEqualityAssertion(g_expected.x, g.x);
             generator.addEqualityAssertion(g_expected.y, g.y);
 
             // check scalar multiplication
             Wire scalar = generator.createConstantWire(5);
             WireArray scalarBits = scalar.getBitWires(4);
-            AffinePoint g5 = mulScalar(g, scalarBits.asArray());
-            AffinePoint g5_expected = addPoints(addPoints(addPoints(addPoints(g, g), g), g), g);
+            JubJubPoint g5 = mulScalar(g, scalarBits.asArray());
+            JubJubPoint g5_expected = addPoints(addPoints(addPoints(addPoints(g, g), g), g), g);
             assertOnCurve(g5.x, g5.y);
             generator.addEqualityAssertion(g5.x, g5_expected.x);
             generator.addEqualityAssertion(g5.y, g5_expected.y);

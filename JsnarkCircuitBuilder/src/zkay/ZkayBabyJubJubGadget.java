@@ -17,11 +17,7 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
     public ZkayBabyJubJubGadget(String... desc) {
         super(desc);
 
-        // Note: this parameterization assumes that the underlying field has
-        // Config.FIELD_PRIME =
-        // 21888242871839275222246405745257275088548364400416034343698204186575808495617
-        // (this is the base field order of BabyJubJub)
-
+        // We assume the underlying field matches the base field of BabyJubJub (so that we can avoid alignment/modulus)
         assert(Config.FIELD_PRIME.toString().equals("21888242871839275222246405745257275088548364400416034343698204186575808495617"));
     }
 
@@ -35,37 +31,28 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
 
     public final static BigInteger COEFF_D = new BigInteger("168696");
 
-    public final static BigInteger MONTGOMERY_A = new BigInteger("168698");
+    public final static BigInteger GENERATOR_X = new BigInteger("16540640123574156134436876038791482806971768689494387082833631921987005038935");
 
-    public final static BigInteger MONTGOMERY_SCALE = new BigInteger("1");
+    public final static BigInteger GENERATOR_Y = new BigInteger("20819045374670962167435360035096875258406992893633759881276124905556507972311");
 
-    public final static BigInteger GENERATOR_U = new BigInteger("16540640123574156134436876038791482806971768689494387082833631921987005038935");
-
-    public final static BigInteger GENERATOR_V = new BigInteger("20819045374670962167435360035096875258406992893633759881276124905556507972311");
-
-    // INFINITY = (0, 1)
-
-    protected static class AffinePoint {
+    public static class JubJubPoint {
         public Wire x;
         public Wire y;
 
-        public AffinePoint(Wire x) {
-            this.x = x;
-        }
-
-        public AffinePoint(Wire x, Wire y) {
+        public JubJubPoint(Wire x, Wire y) {
             this.x = x;
             this.y = y;
         }
-
-        public AffinePoint(ZkayBabyJubJubGadget.AffinePoint p) {
-            this.x = p.x;
-            this.y = p.y;
-        }
     }
 
-    protected AffinePoint getInfinity() {
-        return new AffinePoint(generator.getZeroWire(), generator.getOneWire());
+    protected JubJubPoint getInfinity() {
+        return new JubJubPoint(generator.getZeroWire(), generator.getOneWire());
+    }
+
+    protected JubJubPoint getGenerator() {
+        Wire g_x = generator.createConstantWire(GENERATOR_X);
+        Wire g_y = generator.createConstantWire(GENERATOR_Y);
+        return new JubJubPoint(g_x, g_y);
     }
 
     protected void assertOnCurve(Wire x, Wire y) {
@@ -78,7 +65,7 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
         generator.addEqualityAssertion(lhs, rhs);
     }
 
-    protected AffinePoint addPoints(AffinePoint p1, AffinePoint p2) {
+    protected JubJubPoint addPoints(JubJubPoint p1, JubJubPoint p2) {
         // Twisted Edwards addition according to https://en.wikipedia.org/wiki/Twisted_Edwards_curve#Addition_on_twisted_Edwards_curves
 
         Wire a1 = p1.x.mul(p2.y).add(p1.y.mul(p2.x));
@@ -88,27 +75,27 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
 
         Wire x = a1.mul(nativeInverse(a2));
         Wire y = b1.mul(nativeInverse(b2));
-        return new AffinePoint(x, y);
+        return new JubJubPoint(x, y);
     }
 
-    protected AffinePoint negatePoint(AffinePoint p) {
+    protected JubJubPoint negatePoint(JubJubPoint p) {
         Wire new_x = p.x.negate();
-        return new AffinePoint(new_x, p.y);
+        return new JubJubPoint(new_x, p.y);
     }
 
     /**
      * @param scalarBits the scalar bit representation in little-endian order
      */
-    protected AffinePoint mulScalar(AffinePoint p, Wire[] scalarBits) {
+    protected JubJubPoint mulScalar(JubJubPoint p, Wire[] scalarBits) {
         // Scalar point multiplication using double-and-add algorithm
-        AffinePoint result = getInfinity();
-        AffinePoint doubling = p;
+        JubJubPoint result = getInfinity();
+        JubJubPoint doubling = p;
 
         for (int i = 0; i < scalarBits.length; i++) {
-            AffinePoint q = addPoints(doubling, result);
+            JubJubPoint q = addPoints(doubling, result);
             Wire new_x = scalarBits[i].mux(q.x, result.x);
             Wire new_y = scalarBits[i].mux(q.y, result.y);
-            result = new AffinePoint(new_x, new_y);
+            result = new JubJubPoint(new_x, new_y);
             doubling = addPoints(doubling, doubling);
         }
 
