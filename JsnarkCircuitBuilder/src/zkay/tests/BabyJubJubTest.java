@@ -31,6 +31,13 @@ public class BabyJubJubTest {
             AffinePoint g = new AffinePoint(g_x, g_y);
             AffinePoint g2 = addPoints(g, g);
             assertOnCurve(g2.x, g2.y);
+
+            // check generator - generator = INFINITY
+            AffinePoint gneg = negatePoint(g);
+            assertOnCurve(gneg.x, gneg.y);
+            AffinePoint inf = addPoints(g, gneg);
+            generator.addEqualityAssertion(inf.x, generator.getZeroWire());
+            generator.addEqualityAssertion(inf.y, generator.getOneWire());
         }
 
         @Override

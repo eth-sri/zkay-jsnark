@@ -87,6 +87,11 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
         return new AffinePoint(x, y);
     }
 
+    protected AffinePoint negatePoint(AffinePoint p) {
+        Wire new_x = p.x.negate();
+        return new AffinePoint(new_x, p.y);
+    }
+
     /**
      * Returns a wire holding the inverse of a in the native base field.
      */
