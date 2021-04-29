@@ -20,6 +20,7 @@ public abstract class CryptoBackend {
 		ECDH_AES("ecdh-aes", keyBits -> new ECDHBackend(keyBits, ZkayCBCSymmetricEncGadget.CipherType.AES_128)),
 		ECDH_CHASKEY("ecdh-chaskey", keyBits -> new ECDHBackend(keyBits, ZkayCBCSymmetricEncGadget.CipherType.CHASKEY)),
 		PAILLIER("paillier", PaillierBackend::new),
+		ELGAMAL("elgamal", ElgamalBackend::new),
 		RSA_OAEP("rsa-oaep", keyBits -> new RSABackend(keyBits, ZkayRSAEncryptionGadget.PaddingType.OAEP)),
 		RSA_PKCS15("rsa-pkcs1.5", keyBits -> new RSABackend(keyBits, ZkayRSAEncryptionGadget.PaddingType.PKCS_1_5));
 
@@ -150,7 +151,7 @@ public abstract class CryptoBackend {
 
 	public abstract static class Asymmetric extends CryptoBackend {
 
-		protected final Map<String, LongElement> keys;
+		protected final Map<String, WireArray> keys;
 
 		protected Asymmetric(int keyBits) {
 			super(keyBits);
@@ -166,15 +167,20 @@ public abstract class CryptoBackend {
 		public void addKey(String keyName, Wire[] keyWires) {
 			int chunkBits = getKeyChunkSize();
 			WireArray keyArray = new WireArray(keyWires).getBits(chunkBits, keyName + "_bits").adjustLength(keyBits);
-			keys.put(keyName, new LongElement(keyArray));
+			keys.put(keyName, keyArray);
 		}
 
 		protected LongElement getKey(String keyName) {
-			LongElement key = keys.get(keyName);
-			if (key == null) {
-				throw new IllegalStateException("Key variable " + keyName + " is not associated with a LongElement");
+			WireArray keyArr = getKeyArray(keyName);
+			return new LongElement(keyArr);
+		}
+
+		protected WireArray getKeyArray(String keyName) {
+			WireArray keyArr = keys.get(keyName);
+			if (keyArr == null) {
+				throw new IllegalStateException("Key variable " + keyName + " is not associated with a WireArray");
 			}
-			return key;
+			return keyArr;
 		}
 	}
 }
