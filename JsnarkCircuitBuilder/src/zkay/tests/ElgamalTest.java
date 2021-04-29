@@ -133,30 +133,38 @@ public class ElgamalTest {
             def ElGamalPk(rand):
                 return G*rand
 
+           def ElGamalEmbed(msg):
+                return G*msg
+
             def ElGamalEnc(pk, msg, rand):
-                emb = G*msg
                 s = pk*rand
                 c1 = G*rand
-                c2 = emb + s
+                c2 = msg + s
                 return (c1, c2)
 
-            def Run(sk, msg, rand):
-                pk = ElGamalPk(sk)
-                (c1, c2) = ElGamalEnc(pk, msg, rand)
 
-                (pkx, pky) = as_edwards(pk[0], pk[1])
-                (c1x, c1y) = as_edwards(c1[0], c1[1])
-                (c2x, c2y) = as_edwards(c2[0], c2[1])
-                print('BigInteger plain = new BigInteger("%s");' % msg)
-                print('BigInteger random = new BigInteger("%s");' % rand)
-                print('BigInteger sk = new BigInteger("%s");' % sk)
-                print('BigInteger pkx = new BigInteger("%s");' % pkx)
-                print('BigInteger pky = new BigInteger("%s");' % pky)
-                print('BigInteger c1x_exp = new BigInteger("%s");' % c1x)
-                print('BigInteger c1y_exp = new BigInteger("%s");' % c1y)
-                print('BigInteger c2x_exp = new BigInteger("%s");' % c2x)
-                print('BigInteger c2y_exp = new BigInteger("%s");' % c2y)
-                print('')
+            def Run(sk, msg, rand):
+                    pk = ElGamalPk(sk)
+                    emb = ElGamalEmbed(msg)
+                    (c1, c2) = ElGamalEnc(pk, emb, rand)
+
+
+                    (pkx, pky) = as_edwards(pk[0], pk[1])
+                    (c1x, c1y) = as_edwards(c1[0], c1[1])
+                    (c2x, c2y) = as_edwards(c2[0], c2[1])
+                    (embx, emby) = as_edwards(emb[0], emb[1])
+                    print('BigInteger plain = new BigInteger("%s");' % msg)
+                    print('BigInteger embx = new BigInteger("%s");' % embx)
+                    print('BigInteger emby = new BigInteger("%s");' % emby)
+                    print('BigInteger random = new BigInteger("%s");' % rand)
+                    print('BigInteger sk = new BigInteger("%s");' % sk)
+                    print('BigInteger pkx = new BigInteger("%s");' % pkx)
+                    print('BigInteger pky = new BigInteger("%s");' % pky)
+                    print('BigInteger c1x_exp = new BigInteger("%s");' % c1x)
+                    print('BigInteger c1y_exp = new BigInteger("%s");' % c1y)
+                    print('BigInteger c2x_exp = new BigInteger("%s");' % c2x)
+                    print('BigInteger c2y_exp = new BigInteger("%s");' % c2y)
+                    print('')
 
             Run(193884008695, 42, 405309899802)
             Run(399850902903, 439864, 450983970634)
