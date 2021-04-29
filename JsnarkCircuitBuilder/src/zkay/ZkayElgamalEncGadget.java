@@ -7,7 +7,7 @@ import circuit.structure.Wire;
  * Because the message is in the exponent it is simply a bit string and
  * does not have to be embedded into the curve.
  */
-public class ZkayElgamalGadget extends ZkayBabyJubJubGadget {
+public class ZkayElgamalEncGadget extends ZkayBabyJubJubGadget {
 
     private final Wire[] randomnessBits;    // little-endian randomness bits
 
@@ -19,7 +19,7 @@ public class ZkayElgamalGadget extends ZkayBabyJubJubGadget {
 
     private JubJubPoint c2;
 
-    public ZkayElgamalGadget(Wire[] msgBits, JubJubPoint pk, Wire[] randomnessBits) {
+    public ZkayElgamalEncGadget(Wire[] msgBits, JubJubPoint pk, Wire[] randomnessBits) {
         this.randomnessBits = randomnessBits;
         this.msgBits = msgBits;
         this.pk = pk;
