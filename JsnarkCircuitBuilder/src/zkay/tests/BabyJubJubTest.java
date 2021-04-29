@@ -3,6 +3,7 @@ package zkay.tests;
 import circuit.eval.CircuitEvaluator;
 import circuit.structure.CircuitGenerator;
 import circuit.structure.Wire;
+import circuit.structure.WireArray;
 import org.junit.Test;
 import zkay.ZkayBabyJubJubGadget;
 
@@ -27,7 +28,7 @@ public class BabyJubJubTest {
             Wire g_y = generator.createConstantWire(GENERATOR_V);
             assertOnCurve(g_x, g_y);
 
-            // check 2*generator on curve
+            // check generator + generator on curve
             AffinePoint g = new AffinePoint(g_x, g_y);
             AffinePoint g2 = addPoints(g, g);
             assertOnCurve(g2.x, g2.y);
@@ -38,6 +39,20 @@ public class BabyJubJubTest {
             AffinePoint inf = addPoints(g, gneg);
             generator.addEqualityAssertion(inf.x, generator.getZeroWire());
             generator.addEqualityAssertion(inf.y, generator.getOneWire());
+
+            // check generator + INFINITY = generator
+            AffinePoint g_expected = addPoints(g, getInfinity());
+            generator.addEqualityAssertion(g_expected.x, g.x);
+            generator.addEqualityAssertion(g_expected.y, g.y);
+
+            // check scalar multiplication
+            Wire scalar = generator.createConstantWire(5);
+            WireArray scalarBits = scalar.getBitWires(4);
+            AffinePoint g5 = mulScalar(g, scalarBits.asArray());
+            AffinePoint g5_expected = addPoints(addPoints(addPoints(addPoints(g, g), g), g), g);
+            assertOnCurve(g5.x, g5.y);
+            generator.addEqualityAssertion(g5.x, g5_expected.x);
+            generator.addEqualityAssertion(g5.y, g5_expected.y);
         }
 
         @Override

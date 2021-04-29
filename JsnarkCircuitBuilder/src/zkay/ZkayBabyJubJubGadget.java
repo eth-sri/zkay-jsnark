@@ -64,6 +64,10 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
         }
     }
 
+    protected AffinePoint getInfinity() {
+        return new AffinePoint(generator.getZeroWire(), generator.getOneWire());
+    }
+
     protected void assertOnCurve(Wire x, Wire y) {
         // assert COEFF_A*x*x + y*y == 1 + COEFF_D*x*x*y*y
         Wire xSqr = x.mul(x);
@@ -90,6 +94,25 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
     protected AffinePoint negatePoint(AffinePoint p) {
         Wire new_x = p.x.negate();
         return new AffinePoint(new_x, p.y);
+    }
+
+    /**
+     * @param scalarBits the scalar bit representation in little-endian order
+     */
+    protected AffinePoint mulScalar(AffinePoint p, Wire[] scalarBits) {
+        // Scalar point multiplication using double-and-add algorithm
+        AffinePoint result = getInfinity();
+        AffinePoint doubling = p;
+
+        for (int i = 0; i < scalarBits.length; i++) {
+            AffinePoint q = addPoints(doubling, result);
+            Wire new_x = scalarBits[i].mux(q.x, result.x);
+            Wire new_y = scalarBits[i].mux(q.y, result.y);
+            result = new AffinePoint(new_x, new_y);
+            doubling = addPoints(doubling, doubling);
+        }
+
+        return result;
     }
 
     /**
