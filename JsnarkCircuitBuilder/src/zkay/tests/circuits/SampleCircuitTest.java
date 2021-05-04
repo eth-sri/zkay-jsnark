@@ -1,4 +1,4 @@
-package zkay.tests;
+package zkay.tests.circuits;
 
 import org.junit.Test;
 
@@ -8,12 +8,12 @@ import java.math.BigInteger;
 public class SampleCircuitTest {
 
     @Test
-    public void testSampleCircuitCompile() {
-        SampleCircuit.main(new String[] {"compile"});
+    public void testSampleEncCircuitCompile() {
+        SampleEncCircuit.main(new String[] {"compile"});
     }
 
     @Test
-    public void testSampleCircuitProve() {
+    public void testSampleEncCircuitProve() {
         /*
         zk__out0_cipher = Enc(3, glob_key_Elgamal__owner, zk__out0_cipher_R)
         zk__in0_cipher_val = <42>
@@ -44,6 +44,41 @@ public class SampleCircuitTest {
         // argument order: in, out, priv
         String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y,
                 out0_c1x, out0_c1y, out0_c2x, out0_c2y, out1_c1x, out1_c1y, out1_c2x, out1_c2y, out0_r};
-        SampleCircuit.main(args);
+        SampleEncCircuit.main(args);
+    }
+
+    @Test
+    public void testSampleDecCircuitCompile() {
+        SampleDecCircuit.main(new String[] {"compile"});
+    }
+
+    @Test
+    public void testSampleDecCircuitProve() {
+        /*
+        zk__in0_cipher_val = Enc(42, glob_key_Elgamal__me, ...)
+        secret0_plain_val = 42
+        zk__out0_plain_val = 42
+        zk__in0_cipher_val_R = (secret key of me)
+
+        'glob_key_Elgamal__me' = in[0:2]
+        '_zk__bar.0.zk__in0_cipher_val' = in[2:6]
+        '_zk__bar.0.zk__out0_plain_val' = out[6:7]
+        '_zk__bar.0.secret0_plain_val' = priv[0:1]
+        '_zk__bar.0.zk__in0_cipher_val_R' = priv[1:2]
+         */
+
+        String pkx = new BigInteger("10420944247972906704901930255398155539251465080449381763175509401634402210816").toString(16);
+        String pky = new BigInteger("676510933272081718087751130659922602804650769442378705766141464386492472495").toString(16);
+        String in0_c1x = new BigInteger("17575516153666433400432924447702558477423409923683944849284918792391691139359").toString(16);
+        String in0_c1y = new BigInteger("3840342880323340477739333761922907061104957014408322957888704118993497812304").toString(16);
+        String in0_c2x = new BigInteger("17476721245305713505111140923926236875142199918756101244927570918300239530767").toString(16);
+        String in0_c2y = new BigInteger("7497514342119387331747836801231289445898118249754502859440257057049863178551").toString(16);
+        String out0 = new BigInteger("42").toString(16);
+        String secret0 = new BigInteger("42").toString(16);
+        String skey = new BigInteger("448344687855328518203304384067387474955750326758815542295083498526674852893").toString(16);
+
+        // argument order: in, out, priv
+        String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0, secret0, skey};
+        SampleDecCircuit.main(args);
     }
 }

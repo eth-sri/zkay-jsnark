@@ -50,11 +50,20 @@ public abstract class CryptoBackend {
 
 	public abstract boolean isSymmetric();
 
+	/**
+	 * Whether a separate decryption gadget is used for the backend. For efficiency reasons,
+	 * decryption is checked via encryption gadgets in many backends. For backends where the randomness
+	 * cannot be extracted, a separate decryption gadget is needed.
+	 */
+	public abstract boolean usesDecryptionGadget();
+
 	public abstract void addKey(String keyName, Wire[] keyWires);
 
 	public abstract int getKeyChunkSize();
 
 	public abstract Gadget createEncryptionGadget(TypedWire plain, String key, Wire[] random, String... desc);
+
+	public abstract Gadget createDecryptionGadget(TypedWire plain, Wire[] cipher, String pkName, Wire[] sk, String... desc);
 
 	public abstract static class Symmetric extends CryptoBackend {
 
@@ -77,6 +86,16 @@ public abstract class CryptoBackend {
 		@Override
 		public boolean isSymmetric() {
 			return true;
+		}
+
+		@Override
+		public boolean usesDecryptionGadget() {
+			return false;
+		}
+
+		@Override
+		public Gadget createDecryptionGadget(TypedWire plain, Wire[] cipher, String pkey, Wire[] skey, String... desc) {
+			throw new UnsupportedOperationException("No separate decryption gadget for backend");
 		}
 
 		@Override
@@ -161,6 +180,16 @@ public abstract class CryptoBackend {
 		@Override
 		public boolean isSymmetric() {
 			return false;
+		}
+
+		@Override
+		public boolean usesDecryptionGadget() {
+			return false;
+		}
+
+		@Override
+		public Gadget createDecryptionGadget(TypedWire plain, Wire[] cipher, String pkey, Wire[] skey, String... desc) {
+			throw new UnsupportedOperationException("No separate decryption gadget for backend");
 		}
 
 		@Override

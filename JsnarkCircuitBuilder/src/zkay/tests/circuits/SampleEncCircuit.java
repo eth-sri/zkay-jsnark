@@ -1,13 +1,11 @@
-package zkay.tests;
+package zkay.tests.circuits;
 
 import zkay.ZkayCircuitBase;
 import zkay.HomomorphicInput;
 import static zkay.ZkayType.ZkUint;
-import static zkay.ZkayType.ZkInt;
-import static zkay.ZkayType.ZkBool;
 
-public class SampleCircuit extends ZkayCircuitBase {
-    public SampleCircuit() {
+public class SampleEncCircuit extends ZkayCircuitBase {
+    public SampleEncCircuit() {
         super("zk__Verify_Test_foo", 6, 8, 1, true);
         addCryptoBackend("elgamal", "elgamal", 508);
     }
@@ -43,7 +41,7 @@ public class SampleCircuit extends ZkayCircuitBase {
     }
 
     public static void main(String[] args) {
-        SampleCircuit circuit = new SampleCircuit();
+        SampleEncCircuit circuit = new SampleEncCircuit();
         circuit.run(args);
     }
 }

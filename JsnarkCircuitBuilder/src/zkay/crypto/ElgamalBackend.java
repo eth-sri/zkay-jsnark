@@ -28,6 +28,13 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
     }
 
     @Override
+    public boolean usesDecryptionGadget() {
+        // randomness is not extractable from an ElGamal ciphertext, so need a separate
+        // gadget for decryption
+        return true;
+    }
+
+    @Override
     public void addKey(String keyName, Wire[] keyWires) {
         // elgamal does not require a bit-representation of the public key, so store it directly
         keys.put(keyName, new WireArray(keyWires));
@@ -41,8 +48,17 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
         if (plain.type.bitwidth > 32) {
             throw new IllegalArgumentException("plaintext must be at most 32 bits for elgamal backend");
         }
-        // TODO use uninitZeroToOne for decryption gadget (ciphertext all 0 should be mapped to plaintext all 0)
         return new ZkayElgamalEncGadget(plain.wire.getBitWires(plain.type.bitwidth).asArray(), pk, randomArray);
+    }
+
+    @Override
+    public Gadget createDecryptionGadget(TypedWire plain, Wire[] cipher, String pkName, Wire[] sk, String... desc) {
+        WireArray pkArray = getKeyArray(pkName);
+        ZkayBabyJubJubGadget.JubJubPoint pk = new ZkayBabyJubJubGadget.JubJubPoint(pkArray.get(0), pkArray.get(1));
+        ZkayBabyJubJubGadget.JubJubPoint c1 = new ZkayBabyJubJubGadget.JubJubPoint(cipher[0], cipher[1]);
+        ZkayBabyJubJubGadget.JubJubPoint c2 = new ZkayBabyJubJubGadget.JubJubPoint(cipher[2], cipher[3]);
+        Wire[] skBits = new WireArray(sk).getBits(RND_CHUNK_SIZE).asArray();
+        return new ZkayElgamalDecGadget(pk, skBits, c1, c2, plain.wire);
     }
 
     private TypedWire[] toTypedWireArray(Wire[] wires, String name) {

@@ -58,12 +58,16 @@ public class ElgamalTest {
     }
 
     private static class ElgamalDecCircuitGenerator extends CircuitGenerator {
+        private final BigInteger msg;
+        private final AffinePoint pk;
         private final BigInteger sk;
         private final AffinePoint c1;
         private final AffinePoint c2;
 
-        private ElgamalDecCircuitGenerator(String name, BigInteger sk, AffinePoint c1, AffinePoint c2) {
+        private ElgamalDecCircuitGenerator(String name, AffinePoint pk, BigInteger sk, AffinePoint c1, AffinePoint c2, BigInteger msg) {
             super(name);
+            this.msg = msg;
+            this.pk = pk;
             this.sk = sk;
             this.c1 = c1;
             this.c2 = c2;
@@ -73,9 +77,11 @@ public class ElgamalTest {
         protected void buildCircuit() {
             Wire secretKey = createConstantWire(sk);
             WireArray skBits = secretKey.getBitWires(sk.bitLength());
+            Wire msgWire = createConstantWire(msg);
 
-            ZkayElgamalDecGadget gadget = new ZkayElgamalDecGadget(skBits.asArray(), c1.asConstJubJub(this), c2.asConstJubJub(this));
-            makeOutputArray(gadget.getOutputWires(), "embedded msg");
+            ZkayElgamalDecGadget gadget = new ZkayElgamalDecGadget(pk.asConstJubJub(this),
+                    skBits.asArray(), c1.asConstJubJub(this), c2.asConstJubJub(this), msgWire);
+            makeOutputArray(gadget.getOutputWires(), "dummy output");
         }
 
         @Override
@@ -83,7 +89,6 @@ public class ElgamalTest {
     }
 
     private void oneInputTest(BigInteger plain,
-                              AffinePoint plainEmbedded,
                               BigInteger random,
                               BigInteger sk,
                               AffinePoint pk,
@@ -102,14 +107,12 @@ public class ElgamalTest {
         Assert.assertEquals(c2Expected.x, c2x);
         Assert.assertEquals(c2Expected.y, c2y);
 
-        cgen = new ElgamalDecCircuitGenerator("test_dec", sk, c1Expected, c2Expected);
+        cgen = new ElgamalDecCircuitGenerator("test_dec", pk, sk, c1Expected, c2Expected, plain);
         cgen.generateCircuit();
         evaluator = new CircuitEvaluator(cgen);
         evaluator.evaluate();
-        BigInteger msgEmbeddedX = evaluator.getWireValue(cgen.getOutWires().get(0));
-        BigInteger msgEmbeddedY = evaluator.getWireValue(cgen.getOutWires().get(1));
-        Assert.assertEquals(plainEmbedded.x, msgEmbeddedX);
-        Assert.assertEquals(plainEmbedded.y, msgEmbeddedY);
+        BigInteger one = evaluator.getWireValue(cgen.getOutWires().get(0));
+        Assert.assertEquals(BigInteger.ONE, one);
     }
 
     /*
@@ -152,10 +155,7 @@ public class ElgamalTest {
                     (pkx, pky) = as_edwards(pk[0], pk[1])
                     (c1x, c1y) = as_edwards(c1[0], c1[1])
                     (c2x, c2y) = as_edwards(c2[0], c2[1])
-                    (embx, emby) = as_edwards(emb[0], emb[1])
                     print('BigInteger plain = new BigInteger("%s");' % msg)
-                    print('BigInteger embx = new BigInteger("%s");' % embx)
-                    print('BigInteger emby = new BigInteger("%s");' % emby)
                     print('BigInteger random = new BigInteger("%s");' % rand)
                     print('BigInteger sk = new BigInteger("%s");' % sk)
                     print('BigInteger pkx = new BigInteger("%s");' % pkx)
@@ -180,8 +180,6 @@ public class ElgamalTest {
     @Test
     public void testElgamal1() {
         BigInteger plain = new BigInteger("42");
-        BigInteger embx = new BigInteger("10535323380993087886472965362609445287191380307215483857591983963545230395281");
-        BigInteger emby = new BigInteger("7231436746873551518227382498558787106156958562991793706165873939508722228633");
         BigInteger random = new BigInteger("405309899802");
         BigInteger sk = new BigInteger("193884008695");
         BigInteger pkx = new BigInteger("978284850177065715845354936399538155744704518287394149249989266721543926341");
@@ -191,14 +189,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("13907350068782852152263605206410886873337365073355078405906573608140578916227");
         BigInteger c2y_exp = new BigInteger("9149307267029351159631788806576363925474058266352419493692535044637375928068");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal2() {
         BigInteger plain = new BigInteger("439864");
-        BigInteger embx = new BigInteger("21595723076599009109058664539084069547870296843240503187093768329425288956219");
-        BigInteger emby = new BigInteger("18097202554020896458191497189625993911817072567878859743287269009572194253272");
         BigInteger random = new BigInteger("450983970634");
         BigInteger sk = new BigInteger("399850902903");
         BigInteger pkx = new BigInteger("20154737202903373959008987578119304406284131217874899969944845558277817992999");
@@ -208,14 +204,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("11281513278446502567509454944127307206766814564725516133271053816338428582558");
         BigInteger c2y_exp = new BigInteger("17497269930793571353526793497152430039356164254124504097809662107275794831395");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal3() {
         BigInteger plain = new BigInteger("29479828");
-        BigInteger embx = new BigInteger("5090624408023259778415893099671816951849564978554128197760364260725374272226");
-        BigInteger emby = new BigInteger("1694620465452621787587279378257383916417364672629797268890100137801744761116");
         BigInteger random = new BigInteger("11053400909823");
         BigInteger sk = new BigInteger("303897902911");
         BigInteger pkx = new BigInteger("31345435492764945386603444403456735016667614911767016804916505904146913718");
@@ -225,14 +219,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("7139021775344664164940914982660644863540626632912765602986851904647638985983");
         BigInteger c2y_exp = new BigInteger("18209216882420184165131930424230059136829053346622850166005721954516988083586");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal4() {
         BigInteger plain = new BigInteger("20503");
-        BigInteger embx = new BigInteger("12845294958965042102751963863752006883844944956236903541574358473329309925577");
-        BigInteger emby = new BigInteger("13852249402230821061072176984977019373927816925932649735225753259434350541217");
         BigInteger random = new BigInteger("40394702098873424340");
         BigInteger sk = new BigInteger("879404942393");
         BigInteger pkx = new BigInteger("10997640620745899545837545119414331968682244195676070584160804376136114640598");
@@ -242,14 +234,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("19901604474199070584712150266469540289963648560125937236459223742458159389116");
         BigInteger c2y_exp = new BigInteger("985969319195464703590470488822285435008689597729109974984302378593296801582");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal5() {
         BigInteger plain = new BigInteger("9973");
-        BigInteger embx = new BigInteger("21249546255012322253651147490468785853734063458424176743427441242223238477066");
-        BigInteger emby = new BigInteger("19163313625018099699656147186575486139064606174264885419610412536770071930681");
         BigInteger random = new BigInteger("400939876470980734");
         BigInteger sk = new BigInteger("409693890709893623");
         BigInteger pkx = new BigInteger("13992136274971400894852137371789350766796151296716443626589428788895177216997");
@@ -259,14 +249,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("12722346692527044861221126620569345988799862610226799268676837044749280938913");
         BigInteger c2y_exp = new BigInteger("2199599937649104359053744524481996263472955632317989402668606780155308005390");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal6() {
         BigInteger plain = new BigInteger("3092");
-        BigInteger embx = new BigInteger("21815978496312474512919753918867632909352304846797251404500539251001419890593");
-        BigInteger emby = new BigInteger("10998142644080068987975221812204934750780721651950509029099168212917899938871");
         BigInteger random = new BigInteger("304047020868704");
         BigInteger sk = new BigInteger("943434980730874900974038");
         BigInteger pkx = new BigInteger("3846483841619321902862917272107178076874158719796021143240972648161003814796");
@@ -276,14 +264,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("8852349727856797217022035283948464963747980292944172667776505369901888813337");
         BigInteger c2y_exp = new BigInteger("12371006555687417080340953455276953005445284356479251781116836631805106046483");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal7() {
         BigInteger plain = new BigInteger("11");
-        BigInteger embx = new BigInteger("3159157295926499193149445380353490579135947520816066200146599058178702160761");
-        BigInteger emby = new BigInteger("1993878031115607811290687254767541017673417544700729312366435593051367955543");
         BigInteger random = new BigInteger("9438929848");
         BigInteger sk = new BigInteger("40909374909834");
         BigInteger pkx = new BigInteger("13345168622901191784438750183862538507465816750080851156916198885211569696192");
@@ -293,14 +279,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("125169405077201087432783838668812328494669124013734218228369303721380372323");
         BigInteger c2y_exp = new BigInteger("10612500634152514107223761826458198851886897405592575009866652264045607257975");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal8() {
         BigInteger plain = new BigInteger("309904");
-        BigInteger embx = new BigInteger("2640573642512030532873445190318092415770852369710169159778216117358968643594");
-        BigInteger emby = new BigInteger("21280734730554608140681156136077661508322963951311883189549334291605821958283");
         BigInteger random = new BigInteger("2249");
         BigInteger sk = new BigInteger("1047249");
         BigInteger pkx = new BigInteger("14776023925527842556157578633549266512518974259387826572616427867181769340022");
@@ -310,14 +294,12 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("10199959775847222269886580758148117810980621893786872403186234685052072645184");
         BigInteger c2y_exp = new BigInteger("2743834393457169307568265968374638311944787348697375574904206237236454404544");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 
     @Test
     public void testElgamal9() {
         BigInteger plain = new BigInteger("42");
-        BigInteger embx = new BigInteger("10535323380993087886472965362609445287191380307215483857591983963545230395281");
-        BigInteger emby = new BigInteger("7231436746873551518227382498558787106156958562991793706165873939508722228633");
         BigInteger random = new BigInteger("4992017890738015216991440853823451346783754228142718316135811893930821210517");
         BigInteger sk = new BigInteger("448344687855328518203304384067387474955750326758815542295083498526674852893");
         BigInteger pkx = new BigInteger("10420944247972906704901930255398155539251465080449381763175509401634402210816");
@@ -327,6 +309,6 @@ public class ElgamalTest {
         BigInteger c2x_exp = new BigInteger("6783999682040621346526809601076528941995554662915581379351509236123929622234");
         BigInteger c2y_exp = new BigInteger("20987236539628450607197235495899116821794698514394599573760118705643049424532");
 
-        oneInputTest(plain, new AffinePoint(embx, emby), random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
+        oneInputTest(plain, random, sk, new AffinePoint(pkx, pky), new AffinePoint(c1x_exp, c1y_exp), new AffinePoint(c2x_exp, c2y_exp));
     }
 }

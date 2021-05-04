@@ -576,6 +576,12 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return enc.getOutputWires();
     }
 
+    private void cryptoDec(CryptoBackend cryptoBackend, String cipher, String pkey, String skey, String expPlain) {
+        String desc = ADD_OP_LABELS ? String.format("dec(%s, %s, %s)",
+                getQualifiedName(cipher), getQualifiedName(pkey), getQualifiedName(skey)) : "";
+        cryptoBackend.createDecryptionGadget(get(expPlain), getArr(cipher), getQualifiedName(pkey), getArr(skey), desc);
+    }
+
     private Wire[] cryptoSymmEnc(CryptoBackend cryptoBackend, String plain, String otherPk, String ivCipher, boolean isDec) {
         if (!cryptoBackend.isSymmetric()) {
             throw new IllegalArgumentException("Crypto backend is not symmetric");
@@ -631,23 +637,30 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
     /**
      * Asymmetric Decryption
      */
-    protected void checkDec(Object cryptoBackendId, String plain, String key, String rnd, String expectedCipher) {
+    protected void checkDec(Object cryptoBackendId, String plain, String key, String rnd, String cipher) {
         CryptoBackend cryptoBackend = getCryptoBackend(cryptoBackendId);
 
-        // 1. Decrypt [dec(cipher, rnd, sk) -> enc(plain, rnd, pk)] (compute inverse op)
-        Wire[] computedCipher = cryptoEnc(cryptoBackend, plain, key, rnd, true);
+        if (cryptoBackend.usesDecryptionGadget()) {
+            // TODO we're misusing the randomness wire for the secret key, which is extremely ugly...
+            cryptoDec(cryptoBackend, cipher, key, rnd, plain);
 
-        Wire[] expCipher = getArr(expectedCipher);
-        Wire expCipherIsNonZero = isNonZero(expCipher, expectedCipher); // "!= 0"
-        Wire expCipherIsZero = expCipherIsNonZero.invAsBit(expectedCipher + " == 0");
-        Wire plainZero = isZero(getArr(plain), plain);
-        Wire rndZero = isZero(getArr(rnd), rnd);
+            // TODO handle 0 ciphertext (uninitialization)
+        } else {
+            // 1. Decrypt [dec(cipher, rnd, sk) -> enc(plain, rnd, pk)] (compute inverse op)
+            Wire[] computedCipher = cryptoEnc(cryptoBackend, plain, key, rnd, true);
 
-        // 2. Check that: expectedCipher == 0 => plain == 0 && rnd == 0
-        addGuardedOneAssertion(expCipherIsNonZero.or(plainZero.and(rndZero)));
+            Wire[] expCipher = getArr(cipher);
+            Wire expCipherIsNonZero = isNonZero(expCipher, cipher); // "!= 0"
+            Wire expCipherIsZero = expCipherIsNonZero.invAsBit(cipher + " == 0");
+            Wire plainZero = isZero(getArr(plain), plain);
+            Wire rndZero = isZero(getArr(rnd), rnd);
 
-        // 3. Check that expectedCipher != 0 => expectedCipher == computedCipher
-        addGuardedOneAssertion(expCipherIsZero.or(isEqual(expCipher, expectedCipher, computedCipher, "cipher")));
+            // 2. Check that: expectedCipher == 0 => plain == 0 && rnd == 0
+            addGuardedOneAssertion(expCipherIsNonZero.or(plainZero.and(rndZero)));
+
+            // 3. Check that expectedCipher != 0 => expectedCipher == computedCipher
+            addGuardedOneAssertion(expCipherIsZero.or(isEqual(expCipher, cipher, computedCipher, "cipher")));
+        }
     }
 
     /**
