@@ -9,6 +9,10 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
 
     public static final int EC_COORD_BITS = 253;    // number of bits to store a BabyJubJub affine coordinate
 
+    public static final int KEY_CHUNK_SIZE = 256;   // needs to be a multiple of 8
+
+    public static final int RND_CHUNK_SIZE = 256;
+
     public ElgamalBackend(int keyBits) {
         super(keyBits);
 
@@ -20,22 +24,25 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
 
     @Override
     public int getKeyChunkSize() {
-        return 2*EC_COORD_BITS;
+        return KEY_CHUNK_SIZE;
+    }
+
+    @Override
+    public void addKey(String keyName, Wire[] keyWires) {
+        // elgamal does not require a bit-representation of the public key, so store it directly
+        keys.put(keyName, new WireArray(keyWires));
     }
 
     @Override
     public Gadget createEncryptionGadget(TypedWire plain, String keyName, Wire[] random, String... desc) {
         WireArray pkArray = getKeyArray(keyName);
-
-        // parse as EC curve point
-        Wire pkX = pkArray.packAsBits(0, EC_COORD_BITS);
-        Wire pkY = pkArray.packAsBits(EC_COORD_BITS, 2*EC_COORD_BITS);
-        ZkayBabyJubJubGadget.JubJubPoint pk = new ZkayBabyJubJubGadget.JubJubPoint(pkX, pkY);
-
+        ZkayBabyJubJubGadget.JubJubPoint pk = new ZkayBabyJubJubGadget.JubJubPoint(pkArray.get(0), pkArray.get(1));
+        Wire[] randomArray = new WireArray(random).getBits(RND_CHUNK_SIZE).asArray();
         if (plain.type.bitwidth > 32) {
-            throw new IllegalArgumentException("plaintext must be at most 32 keys for elgamal backend");
+            throw new IllegalArgumentException("plaintext must be at most 32 bits for elgamal backend");
         }
-        return new ZkayElgamalEncGadget(plain.wire.getBitWires(plain.type.bitwidth).asArray(), pk, random);
+        // TODO use uninitZeroToOne for decryption gadget (ciphertext all 0 should be mapped to plaintext all 0)
+        return new ZkayElgamalEncGadget(plain.wire.getBitWires(plain.type.bitwidth).asArray(), pk, randomArray);
     }
 
     private TypedWire[] toTypedWireArray(Wire[] wires, String name) {
