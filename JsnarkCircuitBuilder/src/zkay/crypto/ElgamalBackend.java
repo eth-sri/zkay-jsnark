@@ -7,7 +7,7 @@ import zkay.*;
 
 public class ElgamalBackend extends CryptoBackend.Asymmetric implements HomomorphicBackend {
 
-    public static final int EC_COORD_BITS = 253;    // number of bits to store a BabyJubJub affine coordinate
+    public static final int EC_COORD_BITS = 254;    // a BabyJubJub affine coordinate fits into 254 bits
 
     public static final int KEY_CHUNK_SIZE = 256;   // needs to be a multiple of 8
 

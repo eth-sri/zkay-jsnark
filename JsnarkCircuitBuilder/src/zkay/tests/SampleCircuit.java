@@ -9,7 +9,7 @@ import static zkay.ZkayType.ZkBool;
 public class SampleCircuit extends ZkayCircuitBase {
     public SampleCircuit() {
         super("zk__Verify_Test_foo", 6, 8, 1, true);
-        addCryptoBackend("elgamal", "elgamal", 506);
+        addCryptoBackend("elgamal", "elgamal", 508);
     }
 
     private void __zk__foo() {
