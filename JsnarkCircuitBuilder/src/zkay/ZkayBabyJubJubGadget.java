@@ -11,7 +11,7 @@ import java.math.BigInteger;
 /**
  * Gadget for operations on the BabyJubJub elliptic curve (Twisted Edwards curve over BN254).
  * Parameters are from:
- * https://github.com/HarryR/ethsnarks/blob/2020dec635ee606da1f66118a5f7c6283a4cb6a0/.appendix/ejubjub.sage
+ * https://iden3-docs.readthedocs.io/en/latest/iden3_repos/research/publications/zkproof-standards-workshop-2/baby-jubjub/baby-jubjub.html
  */
 public abstract class ZkayBabyJubJubGadget extends Gadget {
     public ZkayBabyJubJubGadget(String... desc) {
@@ -23,17 +23,18 @@ public abstract class ZkayBabyJubJubGadget extends Gadget {
 
     public final static BigInteger BASE_ORDER = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
-    public final static BigInteger CURVE_ORDER = new BigInteger("21888242871839275222246405745257275088614511777268538073601725287587578984328");
+    public final static BigInteger CURVE_ORDER = new BigInteger("2736030358979909402780800718157159386076813972158567259200215660948447373041");
 
     public final static BigInteger COFACTOR = new BigInteger("8");
 
-    public final static BigInteger COEFF_A = new BigInteger("168700");
+    public final static BigInteger COEFF_A = new BigInteger("1");
 
-    public final static BigInteger COEFF_D = new BigInteger("168696");
+    public final static BigInteger COEFF_D = new BigInteger("9706598848417545097372247223557719406784115219466060233080913168975159366771");
 
-    public final static BigInteger GENERATOR_X = new BigInteger("16540640123574156134436876038791482806971768689494387082833631921987005038935");
+    // arbitrary generator
+    public final static BigInteger GENERATOR_X = new BigInteger("11904062828411472290643689191857696496057424932476499415469791423656658550213");
 
-    public final static BigInteger GENERATOR_Y = new BigInteger("20819045374670962167435360035096875258406992893633759881276124905556507972311");
+    public final static BigInteger GENERATOR_Y = new BigInteger("9356450144216313082194365820021861619676443907964402770398322487858544118183");
 
     public static class JubJubPoint {
         public Wire x;
