@@ -18,6 +18,8 @@ public class ZkayElgamalDecGadget extends ZkayBabyJubJubGadget {
 
     private final Wire expectedMsg;
 
+    private Wire msgOk;
+
     public ZkayElgamalDecGadget(JubJubPoint pk, Wire[] skBits, JubJubPoint c1, JubJubPoint c2, Wire expectedMsg) {
         this.pk = pk;
         this.skBits = skBits;
@@ -40,12 +42,12 @@ public class ZkayElgamalDecGadget extends ZkayBabyJubJubGadget {
         // embed expected message and assert equality
         Wire[] expectedMsgBits = expectedMsg.getBitWires(32).asArray();
         JubJubPoint expectedMsgEmbedded = mulScalar(getGenerator(), expectedMsgBits);
-        generator.addEqualityAssertion(expectedMsgEmbedded.x, msgEmbedded.x);
-        generator.addEqualityAssertion(expectedMsgEmbedded.y, msgEmbedded.y);
+        this.msgOk = expectedMsgEmbedded.x.isEqualTo(msgEmbedded.x)
+                .and(expectedMsgEmbedded.y.isEqualTo(msgEmbedded.y));
     }
 
     @Override
     public Wire[] getOutputWires() {
-        return new Wire[] { generator.getOneWire() };   // dummy output
+        return new Wire[] { this.msgOk };
     }
 }

@@ -576,10 +576,11 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return enc.getOutputWires();
     }
 
-    private void cryptoDec(CryptoBackend cryptoBackend, String cipher, String pkey, String skey, String expPlain) {
+    private Wire cryptoDec(CryptoBackend cryptoBackend, String cipher, String pkey, String skey, String expPlain) {
         String desc = ADD_OP_LABELS ? String.format("dec(%s, %s, %s)",
                 getQualifiedName(cipher), getQualifiedName(pkey), getQualifiedName(skey)) : "";
-        cryptoBackend.createDecryptionGadget(get(expPlain), getArr(cipher), getQualifiedName(pkey), getArr(skey), desc);
+        Gadget dec = cryptoBackend.createDecryptionGadget(get(expPlain), getArr(cipher), getQualifiedName(pkey), getArr(skey), desc);
+        return dec.getOutputWires()[0];
     }
 
     private Wire[] cryptoSymmEnc(CryptoBackend cryptoBackend, String plain, String otherPk, String ivCipher, boolean isDec) {
@@ -642,9 +643,18 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
 
         if (cryptoBackend.usesDecryptionGadget()) {
             // TODO we're misusing the randomness wire for the secret key, which is extremely ugly...
-            cryptoDec(cryptoBackend, cipher, key, rnd, plain);
+            Wire msgOk = cryptoDec(cryptoBackend, cipher, key, rnd, plain);
 
-            // TODO handle 0 ciphertext (uninitialization)
+            Wire[] expCipher = getArr(cipher);
+            Wire expCipherIsNonZero = isNonZero(expCipher, cipher); // "!= 0"
+            Wire expCipherIsZero = expCipherIsNonZero.invAsBit(cipher + " == 0");
+            Wire plainZero = isZero(getArr(plain), plain);
+
+            // handle uninitialized ciphertext: cipher == 0 => plain == 0
+            addGuardedOneAssertion(expCipherIsNonZero.or(plainZero));
+
+            // else: cipher != 0 ==> msgOk == 1
+            addGuardedOneAssertion(expCipherIsZero.or(msgOk));
         } else {
             // 1. Decrypt [dec(cipher, rnd, sk) -> enc(plain, rnd, pk)] (compute inverse op)
             Wire[] computedCipher = cryptoEnc(cryptoBackend, plain, key, rnd, true);

@@ -84,6 +84,13 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
         return new ZkayBabyJubJubGadget.JubJubPoint(wire[offset], wire[offset+1]);
     }
 
+    private static ZkayBabyJubJubGadget.JubJubPoint uninitZeroToIdentity(ZkayBabyJubJubGadget.JubJubPoint p) {
+        // Uninitialized values have a ciphertext of all zeroes, which is not a valid ElGamal cipher.
+        // Instead, replace those values with the point at infinity (0, 1).
+        Wire oneIfBothZero = p.x.checkNonZero().or(p.y.checkNonZero()).invAsBit();
+        return new ZkayBabyJubJubGadget.JubJubPoint(p.x, p.y.add(oneIfBothZero));
+    }
+
     public TypedWire[] doHomomorphicOp(HomomorphicInput lhs, char op, HomomorphicInput rhs, String keyName) {
         switch (op) {
             case '+': {
@@ -93,8 +100,6 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
                 //     e2 = c2 + d2
                 // it is (e1, e2) = Enc(m1 + m2, r1 + r2)
                 String outputName = "(" + lhs.getName() + ") + (" + rhs.getName() + ")";
-
-                // TODO: use uninitZeroToOne to convert 0 ciphertext to Enc(0, ...)
 
                 TypedWire[] lhs_twires = lhs.getCipher();
                 TypedWire[] rhs_twires = rhs.getCipher();
@@ -109,6 +114,11 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
                 ZkayBabyJubJubGadget.JubJubPoint c2 = parseJubJubPoint(lhs_wires, 2);
                 ZkayBabyJubJubGadget.JubJubPoint d1 = parseJubJubPoint(rhs_wires, 0);
                 ZkayBabyJubJubGadget.JubJubPoint d2 = parseJubJubPoint(rhs_wires, 2);
+
+                c1 = uninitZeroToIdentity(c1);
+                c2 = uninitZeroToIdentity(c2);
+                d1 = uninitZeroToIdentity(d1);
+                d2 = uninitZeroToIdentity(d2);
 
                 ZkayElgamalAddGadget gadget = new ZkayElgamalAddGadget(c1, c2, d1, d2);
                 return toTypedWireArray(gadget.getOutputWires(), outputName);

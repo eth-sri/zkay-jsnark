@@ -81,4 +81,22 @@ public class SampleCircuitTest {
         String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0, secret0, skey};
         SampleDecCircuit.main(args);
     }
+
+    @Test
+    public void testSampleDecCircuitProveUninitialized() {
+        String pkx = new BigInteger("2543111965495064707612623550577403881714453669184859408922451773306175031318").toString(16);
+        String pky = new BigInteger("20927827475527585117296730644692999944545060105133073020125343132211068382185").toString(16);
+        // uninitialized ciphertext
+        String in0_c1x = new BigInteger("0").toString(16);
+        String in0_c1y = new BigInteger("0").toString(16);
+        String in0_c2x = new BigInteger("0").toString(16);
+        String in0_c2y = new BigInteger("0").toString(16);
+        String out0 = new BigInteger("0").toString(16);
+        String secret0 = new BigInteger("0").toString(16);
+        String skey = new BigInteger("448344687855328518203304384067387474955750326758815542295083498526674852893").toString(16);
+
+        // argument order: in, out, priv
+        String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0, secret0, skey};
+        SampleDecCircuit.main(args);
+    }
 }
