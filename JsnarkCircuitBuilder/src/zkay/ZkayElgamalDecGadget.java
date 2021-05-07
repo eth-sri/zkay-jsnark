@@ -32,8 +32,7 @@ public class ZkayElgamalDecGadget extends ZkayBabyJubJubGadget {
     protected void buildCircuit() {
         // ensure pk and skBits form a key pair
         JubJubPoint pkExpected = mulScalar(getGenerator(), skBits);
-        generator.addEqualityAssertion(pkExpected.x, pk.x);
-        generator.addEqualityAssertion(pkExpected.y, pk.y);
+        Wire keyOk = pkExpected.x.isEqualTo(pk.x).and(pkExpected.y.isEqualTo(pk.y));
 
         // decrypt ciphertext (without de-embedding)
         JubJubPoint sharedSecret = mulScalar(c1, skBits);
@@ -43,7 +42,8 @@ public class ZkayElgamalDecGadget extends ZkayBabyJubJubGadget {
         Wire[] expectedMsgBits = expectedMsg.getBitWires(32).asArray();
         JubJubPoint expectedMsgEmbedded = mulScalar(getGenerator(), expectedMsgBits);
         this.msgOk = expectedMsgEmbedded.x.isEqualTo(msgEmbedded.x)
-                .and(expectedMsgEmbedded.y.isEqualTo(msgEmbedded.y));
+                .and(expectedMsgEmbedded.y.isEqualTo(msgEmbedded.y))
+                .and(keyOk);
     }
 
     @Override

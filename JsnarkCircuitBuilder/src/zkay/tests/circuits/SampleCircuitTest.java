@@ -93,7 +93,7 @@ public class SampleCircuitTest {
         String in0_c2y = new BigInteger("0").toString(16);
         String out0 = new BigInteger("0").toString(16);
         String secret0 = new BigInteger("0").toString(16);
-        String skey = new BigInteger("448344687855328518203304384067387474955750326758815542295083498526674852893").toString(16);
+        String skey = new BigInteger("0").toString(16);
 
         // argument order: in, out, priv
         String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0, secret0, skey};
