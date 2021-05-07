@@ -92,39 +92,42 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
     }
 
     public TypedWire[] doHomomorphicOp(HomomorphicInput lhs, char op, HomomorphicInput rhs, String keyName) {
-        switch (op) {
-            case '+': {
-                // for (c1, c2) = Enc(m1, r1)
-                //     (d1, d2) = Enc(m2, r2)
-                //     e1 = c1 + d1
-                //     e2 = c2 + d2
-                // it is (e1, e2) = Enc(m1 + m2, r1 + r2)
-                String outputName = "(" + lhs.getName() + ") + (" + rhs.getName() + ")";
+        if ((op == '+') || (op == '-')) {
+            // for (c1, c2) = Enc(m1, r1)
+            //     (d1, d2) = Enc(m2, r2)
+            //     e1 = c1 + d1
+            //     e2 = c2 + d2
+            // it is (e1, e2) = Enc(m1 + m2, r1 + r2)
+            String outputName = "(" + lhs.getName() + ") + (" + rhs.getName() + ")";
 
-                TypedWire[] lhs_twires = lhs.getCipher();
-                TypedWire[] rhs_twires = rhs.getCipher();
+            TypedWire[] lhs_twires = lhs.getCipher();
+            TypedWire[] rhs_twires = rhs.getCipher();
 
-                // sanity checks
-                assert(lhs_twires.length == 4);  // 4 BabyJubJub coordinates
-                assert(rhs_twires.length == 4);  // 4 BabyJubJub coordinates
-                Wire[] lhs_wires = fromTypedWireArray(lhs_twires);
-                Wire[] rhs_wires = fromTypedWireArray(rhs_twires);
+            // sanity checks
+            assert (lhs_twires.length == 4);  // 4 BabyJubJub coordinates
+            assert (rhs_twires.length == 4);  // 4 BabyJubJub coordinates
+            Wire[] lhs_wires = fromTypedWireArray(lhs_twires);
+            Wire[] rhs_wires = fromTypedWireArray(rhs_twires);
 
-                ZkayBabyJubJubGadget.JubJubPoint c1 = parseJubJubPoint(lhs_wires, 0);
-                ZkayBabyJubJubGadget.JubJubPoint c2 = parseJubJubPoint(lhs_wires, 2);
-                ZkayBabyJubJubGadget.JubJubPoint d1 = parseJubJubPoint(rhs_wires, 0);
-                ZkayBabyJubJubGadget.JubJubPoint d2 = parseJubJubPoint(rhs_wires, 2);
+            ZkayBabyJubJubGadget.JubJubPoint c1 = parseJubJubPoint(lhs_wires, 0);
+            ZkayBabyJubJubGadget.JubJubPoint c2 = parseJubJubPoint(lhs_wires, 2);
+            ZkayBabyJubJubGadget.JubJubPoint d1 = parseJubJubPoint(rhs_wires, 0);
+            ZkayBabyJubJubGadget.JubJubPoint d2 = parseJubJubPoint(rhs_wires, 2);
 
-                c1 = uninitZeroToIdentity(c1);
-                c2 = uninitZeroToIdentity(c2);
-                d1 = uninitZeroToIdentity(d1);
-                d2 = uninitZeroToIdentity(d2);
+            c1 = uninitZeroToIdentity(c1);
+            c2 = uninitZeroToIdentity(c2);
+            d1 = uninitZeroToIdentity(d1);
+            d2 = uninitZeroToIdentity(d2);
 
-                ZkayElgamalAddGadget gadget = new ZkayElgamalAddGadget(c1, c2, d1, d2);
-                return toTypedWireArray(gadget.getOutputWires(), outputName);
+            if (op == '-') {
+                d1.x = d1.x.negate();
+                d2.x = d2.x.negate();
             }
-            default:
-                throw new UnsupportedOperationException("Binary operation " + op + " not supported");
+
+            ZkayElgamalAddGadget gadget = new ZkayElgamalAddGadget(c1, c2, d1, d2);
+            return toTypedWireArray(gadget.getOutputWires(), outputName);
+        } else {
+            throw new UnsupportedOperationException("Binary operation " + op + " not supported");
         }
     }
 }
