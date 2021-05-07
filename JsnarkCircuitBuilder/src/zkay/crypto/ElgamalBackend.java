@@ -126,6 +126,30 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
 
             ZkayElgamalAddGadget gadget = new ZkayElgamalAddGadget(c1, c2, d1, d2);
             return toTypedWireArray(gadget.getOutputWires(), outputName);
+        } else if (op == '*') {
+            String outputName = "(" + lhs.getName() + ") * (" + rhs.getName() + ")";
+
+            TypedWire plain_wire;
+            TypedWire[] cipher_twires;
+            if (lhs.isPlain() && rhs.isCipher()) {
+                plain_wire = lhs.getPlain();
+                cipher_twires = rhs.getCipher();
+            } else if (lhs.isCipher() && rhs.isPlain()) {
+                cipher_twires = lhs.getCipher();
+                plain_wire = rhs.getPlain();
+            } else {
+                throw new IllegalArgumentException("Elgamal multiplication requires exactly 1 plaintext argument");
+            }
+
+            Wire[] cipher_wires = fromTypedWireArray(cipher_twires);
+            ZkayBabyJubJubGadget.JubJubPoint c1 = parseJubJubPoint(cipher_wires, 0);
+            ZkayBabyJubJubGadget.JubJubPoint c2 = parseJubJubPoint(cipher_wires, 2);
+
+            c1 = uninitZeroToIdentity(c1);
+            c2 = uninitZeroToIdentity(c2);
+
+            ZkayElgamalMulGadget gadget = new ZkayElgamalMulGadget(c1, c2, plain_wire.wire.getBitWires(256).asArray());
+            return toTypedWireArray(gadget.getOutputWires(), outputName);
         } else {
             throw new UnsupportedOperationException("Binary operation " + op + " not supported");
         }

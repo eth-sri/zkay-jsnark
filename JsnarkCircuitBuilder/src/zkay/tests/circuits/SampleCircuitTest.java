@@ -99,4 +99,27 @@ public class SampleCircuitTest {
         String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0, secret0, skey};
         SampleDecCircuit.main(args);
     }
+
+    @Test
+    public void testSampleMulCircuitCompile() {
+        SampleMulCircuit.main(new String[] {"compile"});
+    }
+
+    @Test
+    public void testSampleMulCircuitProve() {
+        String pkx = new BigInteger("2543111965495064707612623550577403881714453669184859408922451773306175031318").toString(16);
+        String pky = new BigInteger("20927827475527585117296730644692999944545060105133073020125343132211068382185").toString(16);
+        String in0_c1x = new BigInteger("1345914801503869804221332717328097414792076925078931355300970385489312303055").toString(16);
+        String in0_c1y = new BigInteger("3221919363851679888621419552929429977187872757564157365903242129276143826679").toString(16);
+        String in0_c2x = new BigInteger("17378197425436069497126136266495011617394395570683447945973025044739809585373").toString(16);
+        String in0_c2y = new BigInteger("15789009976977544046062803747743295235439704864191175329350822002296637150904").toString(16);
+        String out0_c1x = new BigInteger("1580977511543777394910122699548784426094904736600505129541556064495159060532").toString(16);
+        String out0_c1y = new BigInteger("16190941039609473953318528369093289558337201974880158341123285226900681258492").toString(16);
+        String out0_c2x = new BigInteger("18928854895111284332170004407067674892341217562252934285209587817233013254394").toString(16);
+        String out0_c2y = new BigInteger("8499515539957690392433056598772536511996242730894002020454275332668597388028").toString(16);
+
+        // argument order: in, out, priv
+        String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0_c1x, out0_c1y, out0_c2x, out0_c2y};
+        SampleMulCircuit.main(args);
+    }
 }
