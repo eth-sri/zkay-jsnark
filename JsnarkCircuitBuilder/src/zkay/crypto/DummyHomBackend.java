@@ -83,6 +83,11 @@ public class DummyHomBackend extends CryptoBackend.Asymmetric implements Homomor
 		}
 	}
 
+	@Override
+	public TypedWire[] doHomomorphicRerand(TypedWire[] arg, String keyName, TypedWire randomness) {
+		return arg;
+	}
+
 	private Wire getKeyWire(String keyName) {
 		LongElement key = getKey(keyName);
 		CircuitGenerator generator = CircuitGenerator.getActiveCircuitGenerator();

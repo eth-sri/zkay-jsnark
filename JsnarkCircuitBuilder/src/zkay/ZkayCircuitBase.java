@@ -406,6 +406,11 @@ public abstract class ZkayCircuitBase extends CircuitGenerator {
         return backend.doHomomorphicOp(lhs, op, rhs, getQualifiedName(key));
     }
 
+    public TypedWire[] o_rerand(TypedWire[] arg, String cryptoBackendId, String key, TypedWire randomness) {
+        HomomorphicBackend backend = getHomomorphicCryptoBackend(cryptoBackendId);
+        return backend.doHomomorphicRerand(arg, getQualifiedName(key), randomness);
+    }
+
     /* TYPE CASTING */
 
     protected TypedWire cast(TypedWire w, ZkayType targetType) {

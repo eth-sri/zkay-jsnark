@@ -122,4 +122,14 @@ public class SampleCircuitTest {
         String[] args = new String[]{"prove", pkx, pky, in0_c1x, in0_c1y, in0_c2x, in0_c2y, out0_c1x, out0_c1y, out0_c2x, out0_c2y};
         SampleMulCircuit.main(args);
     }
+
+    @Test
+    public void testSampleRehomCircuitCompile() {
+        SampleRehomCircuit.main(new String[] {"compile"});
+    }
+
+    @Test
+    public void testSampleRehomCircuitProve() {
+        // TODO test with actual proof arguments
+    }
 }

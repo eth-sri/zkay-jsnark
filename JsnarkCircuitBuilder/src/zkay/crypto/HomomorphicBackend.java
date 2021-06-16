@@ -86,4 +86,20 @@ public interface HomomorphicBackend {
 	default TypedWire[] doHomomorphicCond(HomomorphicInput cond, HomomorphicInput trueVal, HomomorphicInput falseVal, String keyName) {
 		throw new UnsupportedOperationException("Ternary conditional not supported");
 	}
+
+	/**
+	 * Re-randomizes the ciphertext in 'arg' by 'randomness'.
+	 *
+	 * @param arg
+	 * 		the ciphertext to be re-randomized
+	 * @param keyName
+	 * 		the qualified name of the key under which arg is encrypted
+	 * @param randomness
+	 * 		the randomness to use for re-randomization
+	 *
+	 * @return the re-randomized ciphertext
+	 */
+	default TypedWire[] doHomomorphicRerand(TypedWire[] arg, String keyName, TypedWire randomness) {
+		throw new UnsupportedOperationException("Homomorphic re-randomization not supported");
+	}
 }

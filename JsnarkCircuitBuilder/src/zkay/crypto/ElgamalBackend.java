@@ -154,4 +154,25 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
             throw new UnsupportedOperationException("Binary operation " + op + " not supported");
         }
     }
+
+    @Override
+    public TypedWire[] doHomomorphicRerand(TypedWire[] arg, String keyName, TypedWire randomness) {
+        String outputName = "rerand(" + arg[0].name + ")";
+
+        // parse argument
+        Wire[] arg_wires = fromTypedWireArray(arg);
+        ZkayBabyJubJubGadget.JubJubPoint c1 = parseJubJubPoint(arg_wires, 0);
+        ZkayBabyJubJubGadget.JubJubPoint c2 = parseJubJubPoint(arg_wires, 2);
+        c1 = uninitZeroToIdentity(c1);
+        c2 = uninitZeroToIdentity(c2);
+
+        // parse key and randomness
+        WireArray pkArray = getKeyArray(keyName);
+        ZkayBabyJubJubGadget.JubJubPoint pk = new ZkayBabyJubJubGadget.JubJubPoint(pkArray.get(0), pkArray.get(1));
+        Wire[] randomArray = randomness.wire.getBitWires(RND_CHUNK_SIZE).asArray();
+
+        // create gadget
+        ZkayElgamalRerandGadget gadget = new ZkayElgamalRerandGadget(c1, c2, pk, randomArray);
+        return toTypedWireArray(gadget.getOutputWires(), outputName);
+    }
 }
