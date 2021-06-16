@@ -11,7 +11,7 @@ public class SampleRehomCircuit extends ZkayCircuitBase {
     }
 
     private void __zk__foo() {
-        stepIn("_zk__send");
+        stepIn("_zk__foo");
         addS("secret0_rnd", 1, ZkUint(256));
         addS("secret1_plain_x1", 1, ZkUint(32));
         addS("zk__in1_cipher_x1_R", 1, ZkUint(256));
