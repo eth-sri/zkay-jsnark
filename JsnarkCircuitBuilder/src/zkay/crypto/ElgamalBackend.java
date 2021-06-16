@@ -148,7 +148,7 @@ public class ElgamalBackend extends CryptoBackend.Asymmetric implements Homomorp
             c1 = uninitZeroToIdentity(c1);
             c2 = uninitZeroToIdentity(c2);
 
-            ZkayElgamalMulGadget gadget = new ZkayElgamalMulGadget(c1, c2, plain_wire.wire.getBitWires(256).asArray());
+            ZkayElgamalMulGadget gadget = new ZkayElgamalMulGadget(c1, c2, plain_wire.wire.getBitWires(32).asArray());
             return toTypedWireArray(gadget.getOutputWires(), outputName);
         } else {
             throw new UnsupportedOperationException("Binary operation " + op + " not supported");
